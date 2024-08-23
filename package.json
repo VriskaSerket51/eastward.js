@@ -1,0 +1,40 @@
+{
+  "name": "eastward.js",
+  "version": "0.0.1",
+  "description": "Library for imort/export assets of the video game Eastward.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "tsx watch ./test/index.ts",
+    "build": "rimraf ./dist && tsc && tsc-alias",
+    "start": "npm run build && node ./dist/index.js",
+    "dev": "tsx watch ./src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VriskaSerket51/eastward.js.git"
+  },
+  "keywords": [
+    "video-game",
+    "reverse-engineering",
+    "import-export",
+    "asset-extraction",
+    "javascript",
+    "typescript"
+  ],
+  "author": "IREVES",
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/VriskaSerket51/eastward.js/issues"
+  },
+  "homepage": "https://github.com/VriskaSerket51/eastward.js#readme",
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "tsc-alias": "^1.8.10",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+  }
+}
