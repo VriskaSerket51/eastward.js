@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/VriskaSerket51/eastward.js#readme",
   "devDependencies": {
+    "@types/node": "^22.5.0",
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "^4.2.0",
@@ -36,5 +37,10 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@msgpack/msgpack": "^3.0.0-beta2",
+    "@skhaz/zstd": "^1.0.21",
+    "@types/lz4": "^0.6.4",
+    "jimp": "^0.22.12",
+    "lz4": "^0.6.5"
   }
 }
