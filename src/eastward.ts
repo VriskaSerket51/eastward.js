@@ -43,7 +43,7 @@ export class Eastward {
   }
 
   async init() {
-    await initZstd();
+    await initZstd("./zstd.wasm");
     const filePath = path.join(this.root, "content", "packages.json");
     const json = JSON.parse((await readFile(filePath)).toString("utf-8"));
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
