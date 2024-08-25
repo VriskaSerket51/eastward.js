@@ -1,6 +1,6 @@
-import { compress, decompress } from "@cloudpss/zstd";
 import { BufferWrapper } from "./buffer";
 import { readFile } from "@/util/filesystem";
+import { ZSTDDecoder } from "zstddec";
 
 type File = {
   name: string;
@@ -45,16 +45,24 @@ export class GArchive {
     }
     const { isCompressed, data } = this.assets[name];
     if (isCompressed) {
-      return Buffer.from(await decompress(data));
+      const decoder = new ZSTDDecoder();
+
+      await decoder.init();
+
+      return Buffer.from(decoder.decode(data));
     }
     return data;
   }
 
-  async setFileData(name: string, data: Buffer) {
-    this.assets[name] = {
-      name,
-      isCompressed: true,
-      data: Buffer.from(await compress(data)),
-    };
-  }
+  // async setFileData(name: string, data: Buffer) {
+  //   const decoder = new ZSTDDecoder();
+
+  //     await decoder.init();
+
+  //   this.assets[name] = {
+  //     name,
+  //     isCompressed: true,
+  //     data: Buffer.from(compress(data)),
+  //   };
+  // }
 }
