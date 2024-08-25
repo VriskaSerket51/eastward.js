@@ -1,9 +1,9 @@
 import { decode } from "@msgpack/msgpack";
-import path from "path";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
 import { exists, initBrowser, readFile } from "@/util/filesystem";
+import path from "@/util/path";
 
 type Package = {
   compress: boolean;

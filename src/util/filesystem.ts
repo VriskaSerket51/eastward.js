@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import path from "path";
 
 let rootHandle: FileSystemDirectoryHandle | null = null;
 
@@ -13,7 +12,7 @@ export async function exists(filePath: string) {
       if (!rootHandle) {
         throw new Error("1");
       }
-      const [root, ...rest] = filePath.split(path.sep);
+      const [root, ...rest] = filePath.split("/");
       if (root != rootHandle.name) {
         throw new Error("2");
       }
@@ -40,7 +39,7 @@ export async function readFile(filePath: string) {
     if (!rootHandle) {
       throw new Error("1");
     }
-    const [root, ...rest] = filePath.split(path.sep);
+    const [root, ...rest] = filePath.split("/");
     if (root != rootHandle.name) {
       throw new Error("2");
     }

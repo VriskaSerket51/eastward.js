@@ -1,5 +1,5 @@
 import { Eastward } from "@/eastward";
-import path from "path";
+import path from "@/util/path";
 import fs from "fs";
 
 export class AssetNode {
