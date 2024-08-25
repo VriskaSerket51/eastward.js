@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/VriskaSerket51/eastward.js#readme",
   "devDependencies": {
+    "@types/lz4js": "^0.2.1",
     "@types/node": "^22.5.0",
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
@@ -42,6 +43,6 @@
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@types/wicg-file-system-access": "^2023.10.5",
     "jimp": "^0.22.12",
-    "lz4-napi": "^2.2.0"
+    "lz4js": "^0.2.0"
   }
 }
