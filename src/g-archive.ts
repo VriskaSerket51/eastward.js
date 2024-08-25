@@ -1,4 +1,4 @@
-import { compressSync, decompressSync } from "@skhaz/zstd";
+import { compress, decompress } from "@bokuweb/zstd-wasm";
 import { BufferWrapper } from "./buffer";
 import { readFile } from "@/util/filesystem";
 
@@ -45,7 +45,7 @@ export class GArchive {
     }
     const { isCompressed, data } = this.assets[name];
     if (isCompressed) {
-      return decompressSync(data);
+      return Buffer.from(decompress(data));
     }
     return data;
   }
@@ -54,7 +54,7 @@ export class GArchive {
     this.assets[name] = {
       name,
       isCompressed: true,
-      data: compressSync(data),
+      data: Buffer.from(compress(data)),
     };
   }
 }

@@ -4,6 +4,7 @@ import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
 import { exists, initBrowser, readFile } from "@/util/filesystem";
+import { init as initZstd } from "@bokuweb/zstd-wasm";
 
 type Package = {
   compress: boolean;
@@ -42,13 +43,14 @@ export class Eastward {
   }
 
   async init() {
+    await initZstd();
     const filePath = path.join(this.root, "content", "packages.json");
     const json = JSON.parse((await readFile(filePath)).toString("utf-8"));
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
         const filePath = path.join(this.root, "content", "game", `${id}.g`);
         this.archives[id] = new GArchive();
-        this.archives[id].load(filePath);
+        await this.archives[id].load(filePath);
         // console.log(`${id}.g loaded`);
       }
     }

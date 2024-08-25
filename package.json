@@ -38,8 +38,8 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@bokuweb/zstd-wasm": "^0.0.21-alpha.5",
     "@msgpack/msgpack": "^3.0.0-beta2",
-    "@skhaz/zstd": "^1.0.21",
     "@types/lz4": "^0.6.4",
     "@types/wicg-file-system-access": "^2023.10.5",
     "jimp": "^0.22.12",
