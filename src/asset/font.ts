@@ -4,11 +4,14 @@ import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
 export class BMFontAsset extends Asset {
-  fnt;
+  fnt: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
-    this.fnt = eastward.loadTextFile(node.objectFiles.font);
+  }
+
+  async load() {
+    this.fnt = await this.eastward.loadTextFile(this.node.objectFiles.font);
   }
 
   async saveFile(filePath: string) {
@@ -23,11 +26,14 @@ export class BMFontAsset extends Asset {
 }
 
 export class TTFFontAsset extends Asset {
-  ttf;
+  ttf: Buffer | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
-    this.ttf = eastward.loadFile(node.objectFiles.font);
+  }
+
+  async load() {
+    this.ttf = await this.eastward.loadFile(this.node.objectFiles.font);
   }
 
   async saveFile(filePath: string) {

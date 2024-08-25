@@ -23,7 +23,15 @@ export class AssetNode {
 }
 
 export class Asset {
-  constructor(eastward: Eastward, node: AssetNode) {}
+  eastward;
+  node;
+
+  constructor(eastward: Eastward, node: AssetNode) {
+    this.eastward = eastward;
+    this.node = node;
+  }
+
+  async load() {}
 
   beforeSave(filePath: string) {
     const dstDir = path.dirname(filePath);

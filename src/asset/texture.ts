@@ -1,36 +1,40 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
-import { decodeHMG } from "@/util/hmg";
+import { decodeHMG, HMG } from "@/util/hmg";
 import Jimp from "jimp";
 
 export class TextureAsset extends Asset {
-  hmg;
+  hmg: HMG | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
+  }
 
+  async load() {
     let pixmap;
-    const texture = eastward.findTexture(node.path);
+    const texture = this.eastward.findTexture(this.node.path);
     if (!texture) {
-      throw new Error(node.path);
+      throw new Error(this.node.path);
     }
     const textureGroup = texture.parent;
     if (textureGroup.atlasMode) {
       if (!textureGroup.atlasTexturesCache) {
         const base = textureGroup.atlasCachePath;
         const configPath = `${base}/atlas.json`;
-        const data = eastward.loadJSONFile(configPath);
+        const data = await this.eastward.loadJSONFile(configPath);
         const atlasTexturesCache = [];
         for (const atlasInfo of data.atlases) {
           const texpath = atlasInfo.name;
-          atlasTexturesCache.push(eastward.loadFile(`${base}/${texpath}`));
+          atlasTexturesCache.push(
+            await this.eastward.loadFile(`${base}/${texpath}`)
+          );
         }
         textureGroup.atlasTexturesCache = atlasTexturesCache;
       }
       const atlasId = texture.atlasId;
       pixmap = textureGroup.atlasTexturesCache[atlasId - 1];
     } else {
-      pixmap = eastward.loadFile(node.objectFiles.pixmap);
+      pixmap = await this.eastward.loadFile(this.node.objectFiles.pixmap);
     }
     if (!pixmap) {
       // console.error(`null pixmap at ${node.path}`);

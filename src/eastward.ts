@@ -1,9 +1,9 @@
 import { decode } from "@msgpack/msgpack";
-import fs from "fs";
 import path from "path";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
+import { exists, initBrowser, readFile } from "@/util/filesystem";
 
 type Package = {
   compress: boolean;
@@ -39,22 +39,26 @@ export class Eastward {
 
   constructor(root: string) {
     this.root = root;
-    const filePath = path.join(root, "content", "packages.json");
-    const json = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  }
+
+  async init() {
+    const filePath = path.join(this.root, "content", "packages.json");
+    const json = JSON.parse((await readFile(filePath)).toString("utf-8"));
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
-        const filePath = path.join(root, "content", "game", `${id}.g`);
-        this.archives[id] = new GArchive(filePath);
+        const filePath = path.join(this.root, "content", "game", `${id}.g`);
+        this.archives[id] = new GArchive();
+        this.archives[id].load(filePath);
         // console.log(`${id}.g loaded`);
       }
     }
 
-    const config = this.loadJSONFile("config/game_config");
+    const config = await this.loadJSONFile("config/game_config");
     const assetLibraryIndex = config.asset_library;
     const textureLibraryIndex = config.texture_library;
 
-    this._loadAssetLibrary(assetLibraryIndex);
-    this._loadTextureLibrary(textureLibraryIndex);
+    await this._loadAssetLibrary(assetLibraryIndex);
+    await this._loadTextureLibrary(textureLibraryIndex);
   }
 
   private _skipEmptyTable(obj: any) {
@@ -71,13 +75,13 @@ export class Eastward {
     return this.nodes[path] || new AssetNode(path);
   }
 
-  private _loadAssetLibrary(indexPath: string) {
+  private async _loadAssetLibrary(indexPath: string) {
     const msgpackPath = `${indexPath}.packed`;
     let indexData;
-    if (this.checkFileExists(msgpackPath)) {
-      indexData = this.loadMsgPackFile(msgpackPath);
+    if (await this.checkFileExists(msgpackPath)) {
+      indexData = await this.loadMsgPackFile(msgpackPath);
     } else {
-      indexData = this.loadJSONFile(indexPath);
+      indexData = await this.loadJSONFile(indexPath);
     }
 
     for (const [
@@ -109,8 +113,8 @@ export class Eastward {
     }
   }
 
-  _loadTextureLibrary(indexPath: string) {
-    const data = this.loadJSONFile(indexPath);
+  async _loadTextureLibrary(indexPath: string) {
+    const data = await this.loadJSONFile(indexPath);
     deserialize(this.textureLibrary, data);
 
     for (const group of this.textureLibrary.groups) {
@@ -139,9 +143,9 @@ export class Eastward {
     this.textureLibrary.textureMap = textureMap;
   }
 
-  checkFileExists(filePath: string) {
+  async checkFileExists(filePath: string) {
     const physicalPath = path.join(this.root, filePath);
-    if (fs.existsSync(physicalPath)) {
+    if (await exists(physicalPath)) {
       return true;
     }
     const [archive, ...rest] = filePath.split("/");
@@ -152,10 +156,10 @@ export class Eastward {
     return this.archives[archive].checkFileData(virtualPath);
   }
 
-  loadFile(filePath: string) {
+  async loadFile(filePath: string) {
     const physicalPath = path.join(this.root, filePath);
-    if (fs.existsSync(physicalPath)) {
-      return fs.readFileSync(physicalPath);
+    if (await exists(physicalPath)) {
+      return await readFile(physicalPath);
     }
     const [archive, ...rest] = filePath.split("/");
     if (!this.archives[archive]) {
@@ -165,31 +169,31 @@ export class Eastward {
     return this.archives[archive].getFileData(virtualPath);
   }
 
-  loadMsgPackFile(filePath: string) {
-    const data = this.loadFile(filePath);
+  async loadMsgPackFile(filePath: string) {
+    const data = await this.loadFile(filePath);
     if (!data) {
       return null;
     }
     return decode(data);
   }
 
-  loadJSONFile(filePath: string) {
-    const data = this.loadFile(filePath);
+  async loadJSONFile(filePath: string) {
+    const data = await this.loadFile(filePath);
     if (!data) {
       return null;
     }
     return JSON.parse(data.toString());
   }
 
-  loadTextFile(filePath: string) {
-    const data = this.loadFile(filePath);
+  async loadTextFile(filePath: string) {
+    const data = await this.loadFile(filePath);
     if (!data) {
       return null;
     }
     return data.toString();
   }
 
-  loadAsset(path: string) {
+  async loadAsset(path: string) {
     const node = this.nodes[path];
     if (!node) {
       return null;
@@ -202,7 +206,7 @@ export class Eastward {
     }
 
     if (node.parent && !assetLoader.skipParent) {
-      this.loadAsset(node.parent);
+      await this.loadAsset(node.parent);
     }
 
     if (node.cachedAsset) {
@@ -210,6 +214,7 @@ export class Eastward {
     }
 
     const asset = new assetLoader.loader(this, node);
+    await asset.load();
     node.cachedAsset = asset;
     return asset;
   }
@@ -233,11 +238,19 @@ export class Eastward {
 
   async extractTo(dst: string) {
     for (const [filePath, node] of Object.entries(this.nodes)) {
-      const asset = this.loadAsset(filePath);
+      const asset = await this.loadAsset(filePath);
       if (asset && typeof node.filePath == "string") {
         const dstPath = path.join(dst, node.filePath);
         await asset.saveFile(dstPath);
       }
     }
+  }
+}
+
+export class EastwardBrowser {
+  async init() {
+    const dirHandle = await window.showDirectoryPicker();
+    initBrowser(dirHandle);
+    return new Eastward(dirHandle.name);
   }
 }

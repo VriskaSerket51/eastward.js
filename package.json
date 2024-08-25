@@ -4,6 +4,7 @@
   "description": "Typescript library for imort/export assets of the video game Eastward.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "test": "tsx watch ./test/index.ts",
     "build": "rimraf ./dist && tsc && tsc-alias",
@@ -40,6 +41,7 @@
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@skhaz/zstd": "^1.0.21",
     "@types/lz4": "^0.6.4",
+    "@types/wicg-file-system-access": "^2023.10.5",
     "jimp": "^0.22.12",
     "lz4": "^0.6.5"
   }

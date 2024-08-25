@@ -1,6 +1,6 @@
 import { compressSync, decompressSync } from "@skhaz/zstd";
-import fs from "fs";
 import { BufferWrapper } from "./buffer";
+import { readFile } from "@/util/filesystem";
 
 type File = {
   name: string;
@@ -11,8 +11,8 @@ type File = {
 export class GArchive {
   assets: { [key: string]: File } = {};
 
-  constructor(filePath: string) {
-    const buffer = new BufferWrapper(fs.readFileSync(filePath));
+  async load(filePath: string) {
+    const buffer = new BufferWrapper(await readFile(filePath));
 
     if (buffer.readInt32() != 27191) {
       throw new Error(`${filePath} is not GArchive!!!`);

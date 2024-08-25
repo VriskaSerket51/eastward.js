@@ -1,7 +1,13 @@
 import lz4 from "lz4";
 import { BufferWrapper } from "@/buffer";
 
-export function decodeHMG(raw: Buffer) {
+export type HMG = {
+  width: number;
+  height: number;
+  data: Buffer;
+};
+
+export function decodeHMG(raw: Buffer): HMG {
   const buffer = new BufferWrapper(raw);
   if (buffer.readChars(3) != "PGF") {
     throw new Error("This file is not Hmg File!!!");
