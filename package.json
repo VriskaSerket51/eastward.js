@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.21-alpha.5",
+    "@cloudpss/zstd": "^0.3.1",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "@types/wicg-file-system-access": "^2023.10.5",
     "lz4js": "^0.2.0",

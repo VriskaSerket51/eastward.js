@@ -1,4 +1,4 @@
-import { compress, decompress } from "@bokuweb/zstd-wasm";
+import { compress, decompress } from "@cloudpss/zstd";
 import { BufferWrapper } from "./buffer";
 import { readFile } from "@/util/filesystem";
 
@@ -39,22 +39,22 @@ export class GArchive {
     return this.assets[name] != null;
   }
 
-  getFileData(name: string) {
+  async getFileData(name: string) {
     if (!this.assets[name]) {
       return null;
     }
     const { isCompressed, data } = this.assets[name];
     if (isCompressed) {
-      return Buffer.from(decompress(data));
+      return Buffer.from(await decompress(data));
     }
     return data;
   }
 
-  setFileData(name: string, data: Buffer) {
+  async setFileData(name: string, data: Buffer) {
     this.assets[name] = {
       name,
       isCompressed: true,
-      data: Buffer.from(compress(data)),
+      data: Buffer.from(await compress(data)),
     };
   }
 }
