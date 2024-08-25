@@ -1,7 +1,7 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
 import { decodeHMG, HMG } from "@/util/hmg";
-import Jimp from "jimp";
+import sharp from "sharp";
 
 export class TextureAsset extends Asset {
   hmg: HMG | null = null;
@@ -49,15 +49,18 @@ export class TextureAsset extends Asset {
     }
     super.beforeSave(filePath);
     const { width, height, data } = this.hmg;
-    const image = await new Promise<Jimp>((resolve, reject) => {
-      new Jimp({ data, width, height }, (err, image) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(image);
-      });
-    });
-    await image.writeAsync(filePath);
+    await sharp(data, { raw: { width, height, channels: 4 } })
+      .png()
+      .toFile(filePath);
+    // const image = await new Promise<Jimp>((resolve, reject) => {
+    //   new Jimp({ data, width, height }, (err, image) => {
+    //     if (err) {
+    //       reject(err);
+    //     }
+    //     resolve(image);
+    //   });
+    // });
+    // await image.writeAsync(filePath);
   }
 
   saveFileSync(filePath: string) {
@@ -66,7 +69,7 @@ export class TextureAsset extends Asset {
     }
     super.beforeSave(filePath);
     const { width, height, data } = this.hmg;
-    const image = new Jimp({ data, width, height });
-    image.write(filePath);
+    // const image = new Jimp({ data, width, height });
+    // image.write(filePath);
   }
 }
