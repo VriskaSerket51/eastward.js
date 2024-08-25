@@ -12,11 +12,13 @@ export class BMFontAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
+    super.beforeSave(filePath);
     await fs.writeFile(filePath, this.fnt || "err");
   }
 
   saveFileSync(filePath: string) {
-    writeFileSync(filePath, this.fnt || "err")
+    super.beforeSave(filePath);
+    writeFileSync(filePath, this.fnt || "err");
   }
 }
 
@@ -29,10 +31,12 @@ export class TTFFontAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
+    super.beforeSave(filePath);
     await fs.writeFile(filePath, this.ttf || "err");
   }
 
   saveFileSync(filePath: string) {
-    writeFileSync(filePath, this.ttf || "err")
+    super.beforeSave(filePath);
+    writeFileSync(filePath, this.ttf || "err");
   }
 }

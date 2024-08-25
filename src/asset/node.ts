@@ -1,4 +1,6 @@
 import { Eastward } from "@/eastward";
+import path from "path";
+import fs from "fs";
 
 export class AssetNode {
   name = "";
@@ -23,7 +25,12 @@ export class AssetNode {
 export class Asset {
   constructor(eastward: Eastward, node: AssetNode) {}
 
+  beforeSave(filePath: string) {
+    const dstDir = path.dirname(filePath);
+    if (!fs.existsSync(dstDir)) {
+      fs.mkdirSync(dstDir, { recursive: true });
+    }
+  }
   async saveFile(filePath: string) {}
   saveFileSync(filePath: string) {}
-
 }

@@ -8,13 +8,33 @@ export class TextureAsset extends Asset {
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
-    if (!node.objectFiles) {
-      return;
+
+    let pixmap;
+    const texture = eastward.findTexture(node.path);
+    if (!texture) {
+      throw new Error(node.path);
     }
-    const pixmap = eastward.loadFile(node.objectFiles.pixmap);
+    const textureGroup = texture.parent;
+    if (textureGroup.atlasMode) {
+      if (!textureGroup.atlasTexturesCache) {
+        const base = textureGroup.atlasCachePath;
+        const configPath = `${base}/atlas.json`;
+        const data = eastward.loadJSONFile(configPath);
+        const atlasTexturesCache = [];
+        for (const atlasInfo of data.atlases) {
+          const texpath = atlasInfo.name;
+          atlasTexturesCache.push(eastward.loadFile(`${base}/${texpath}`));
+        }
+        textureGroup.atlasTexturesCache = atlasTexturesCache;
+      }
+      const atlasId = texture.atlasId;
+      pixmap = textureGroup.atlasTexturesCache[atlasId - 1];
+    } else {
+      pixmap = eastward.loadFile(node.objectFiles.pixmap);
+    }
     if (!pixmap) {
+      // console.error(`null pixmap at ${node.path}`);
       return;
-      // throw new Error(`null pixmap at ${node.path}`);
     }
     this.hmg = decodeHMG(pixmap);
   }
@@ -23,6 +43,7 @@ export class TextureAsset extends Asset {
     if (!this.hmg) {
       return;
     }
+    super.beforeSave(filePath);
     const { width, height, data } = this.hmg;
     const image = await new Promise<Jimp>((resolve, reject) => {
       new Jimp({ data, width, height }, (err, image) => {
@@ -39,14 +60,9 @@ export class TextureAsset extends Asset {
     if (!this.hmg) {
       return;
     }
+    super.beforeSave(filePath);
     const { width, height, data } = this.hmg;
-    new Jimp({ data, width, height }, (err, image) => {
-      if (err) {
-        console.log(err);
-      }
-      if (!err && image) {
-        image.write(filePath);
-      }
-    });
+    const image = new Jimp({ data, width, height });
+    image.write(filePath);
   }
 }

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
+import { deserialize } from "@/util/serializer";
 
 type Package = {
   compress: boolean;
@@ -34,6 +35,7 @@ export class Eastward {
   archives: { [key: string]: GArchive } = {};
   nodes: { [key: string]: AssetNode } = {};
   assetLoaders: { [key: string]: AssetLoader } = {};
+  textureLibrary: any = {};
 
   constructor(root: string) {
     this.root = root;
@@ -52,6 +54,7 @@ export class Eastward {
     const textureLibraryIndex = config.texture_library;
 
     this._loadAssetLibrary(assetLibraryIndex);
+    this._loadTextureLibrary(textureLibraryIndex);
   }
 
   private _skipEmptyTable(obj: any) {
@@ -104,6 +107,36 @@ export class Eastward {
         pnode.children[name] = node;
       }
     }
+  }
+
+  _loadTextureLibrary(indexPath: string) {
+    const data = this.loadJSONFile(indexPath);
+    deserialize(this.textureLibrary, data);
+
+    for (const group of this.textureLibrary.groups) {
+      if (group.default) {
+        this.textureLibrary.defaultGroup = group;
+      }
+    }
+
+    const textureMap: any = {};
+
+    for (const group of this.textureLibrary.groups) {
+      const newTextures = [];
+      if (Array.isArray(group.textures)) {
+        for (const texture of group.textures) {
+          if (this.nodes[texture.path]) {
+            newTextures.push(texture.path);
+
+            textureMap[texture.path] = texture;
+          }
+        }
+      }
+
+      group.textures = newTextures;
+    }
+
+    this.textureLibrary.textureMap = textureMap;
   }
 
   checkFileExists(filePath: string) {
@@ -181,7 +214,9 @@ export class Eastward {
     return asset;
   }
 
-  registerAll() {}
+  findTexture(path: string) {
+    return this.textureLibrary.textureMap[path];
+  }
 
   registerAssetLoader(type: string, loader: LoaderFunc, skipParent?: boolean) {
     this.assetLoaders[type] = {
@@ -190,16 +225,18 @@ export class Eastward {
     };
   }
 
-  extractTo(dst: string) {
+  getAssetNodes() {
+    return Object.values(this.nodes).filter(
+      (node) => typeof node.filePath == "string"
+    );
+  }
+
+  async extractTo(dst: string) {
     for (const [filePath, node] of Object.entries(this.nodes)) {
       const asset = this.loadAsset(filePath);
       if (asset && typeof node.filePath == "string") {
         const dstPath = path.join(dst, node.filePath);
-        const dstDir = path.dirname(dstPath);
-        if (!fs.existsSync(dstDir)) {
-          fs.mkdirSync(dstDir, {recursive: true});
-        }
-        asset.saveFile(dstPath);
+        await asset.saveFile(dstPath);
       }
     }
   }
