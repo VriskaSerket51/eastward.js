@@ -1,4 +1,4 @@
-import lz4 from "lz4";
+import { uncompressSync } from "lz4-napi";
 import { BufferWrapper } from "@/buffer";
 
 export type HMG = {
@@ -29,10 +29,10 @@ export function decodeHMG(raw: Buffer): HMG {
 
   const compressedData = buffer.readBytes(compressedSize);
   const data = Buffer.alloc(width * height * 4);
-  lz4.decodeBlock(Buffer.from(compressedData), data);
+  const uncompressed = uncompressSync(Buffer.from(compressedData));
   return {
     width,
     height,
-    data,
+    uncompressed,
   };
 }

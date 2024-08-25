@@ -40,9 +40,8 @@
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.21-alpha.5",
     "@msgpack/msgpack": "^3.0.0-beta2",
-    "@types/lz4": "^0.6.4",
     "@types/wicg-file-system-access": "^2023.10.5",
     "jimp": "^0.22.12",
-    "lz4": "^0.6.5"
+    "lz4-napi": "^2.2.0"
   }
 }
