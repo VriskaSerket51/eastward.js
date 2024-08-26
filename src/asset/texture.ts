@@ -85,25 +85,28 @@ export class TextureAsset extends Asset {
     const fileSize = headerSize + pixelArraySize;
 
     // BMP File Header
-    const fileHeader = Buffer.alloc(fileHeaderSize);
-    fileHeader.write("BM"); // Signature
-    fileHeader.writeUInt32LE(fileSize, 2); // File size
-    fileHeader.writeUInt32LE(0, 6); // Reserved
-    fileHeader.writeUInt32LE(headerSize, 10); // Pixel data offset
+    const fHeader = new Uint8Array(fileHeaderSize);
+    const fileHeader = new DataView(fHeader.buffer);
+    fileHeader.setUint8(0, "B".charCodeAt(0)); // Signature
+    fileHeader.setUint8(0, "B".charCodeAt(0)); // Signature
+    fileHeader.setUint32(2, fileSize, true); // File size
+    fileHeader.setUint32(6, 0, true); // Reserved
+    fileHeader.setUint32(10, headerSize, true); // Pixel data offset
 
     // DIB Header (BITMAPINFOHEADER)
-    const dibHeader = Buffer.alloc(dibHeaderSize);
-    dibHeader.writeUInt32LE(dibHeaderSize, 0); // DIB header size
-    dibHeader.writeInt32LE(width, 4); // Width
-    dibHeader.writeInt32LE(-height, 8); // Height (negative for top-down bitmap)
-    dibHeader.writeUInt16LE(1, 12); // Color planes
-    dibHeader.writeUInt16LE(32, 14); // Bits per pixel (32 for RGBA)
-    dibHeader.writeUInt32LE(0, 16); // Compression method (0 = BI_RGB, no compression)
-    dibHeader.writeUInt32LE(pixelArraySize, 20); // Image size (may be 0 for BI_RGB)
-    dibHeader.writeInt32LE(0, 24); // Horizontal resolution (pixels per meter)
-    dibHeader.writeInt32LE(0, 28); // Vertical resolution (pixels per meter)
-    dibHeader.writeUInt32LE(0, 32); // Number of colors in the palette
-    dibHeader.writeUInt32LE(0, 36); // Important colors (0 = all colors are important)
+    const dHeader = new Uint8Array(dibHeaderSize);
+    const dibHeader = new DataView(dHeader.buffer);
+    dibHeader.setUint32(0, dibHeaderSize, true); // DIB header size
+    dibHeader.setInt32(4, width, true); // Width
+    dibHeader.setInt32(8, -height, true); // Height (negative for top-down bitmap)
+    dibHeader.setUint16(12, 1, true); // Color planes
+    dibHeader.setUint16(14, 32, true); // Bits per pixel (32 for RGBA)
+    dibHeader.setUint32(16, 0, true); // Compression method (0 = BI_RGB, no compression)
+    dibHeader.setUint32(20, pixelArraySize, true); // Image size (may be 0 for BI_RGB)
+    dibHeader.setInt32(24, 0, true); // Horizontal resolution (pixels per meter)
+    dibHeader.setInt32(28, 0, true); // Vertical resolution (pixels per meter)
+    dibHeader.setUint32(32, 0, true); // Number of colors in the palette
+    dibHeader.setUint32(36, 0, true); // Important colors (0 = all colors are important)
 
     for (let i = 0; i < raw.byteLength; i += 4) {
       const tmp = raw[i];
@@ -112,6 +115,6 @@ export class TextureAsset extends Asset {
     }
 
     // Combine headers and pixel data into one buffer
-    return Buffer.concat([fileHeader, dibHeader, raw]);
+    return new Uint8Array([...fHeader, ...dHeader, ...raw]);
   }
 }

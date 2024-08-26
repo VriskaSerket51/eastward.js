@@ -43,7 +43,7 @@ export class Eastward {
 
   async init() {
     const filePath = path.join(this.root, "content", "packages.json");
-    const json = JSON.parse((await readFile(filePath)).toString("utf-8"));
+    const json = JSON.parse(new TextDecoder().decode(await readFile(filePath)));
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
         const filePath = path.join(this.root, "content", "game", `${id}.g`);
@@ -178,11 +178,11 @@ export class Eastward {
   }
 
   async loadJSONFile(filePath: string) {
-    const data = await this.loadFile(filePath);
+    const data = await this.loadTextFile(filePath);
     if (!data) {
       return null;
     }
-    return JSON.parse(data.toString());
+    return JSON.parse(data);
   }
 
   async loadTextFile(filePath: string) {
@@ -190,7 +190,7 @@ export class Eastward {
     if (!data) {
       return null;
     }
-    return data.toString();
+    return new TextDecoder().decode(data);
   }
 
   async loadAsset(path: string) {

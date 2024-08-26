@@ -1,18 +1,18 @@
-import { BufferWrapper } from "./buffer";
+import { Buffer } from "./buffer";
 import { readFile } from "@/util/filesystem";
 import { ZSTDDecoder } from "zstddec";
 
 type File = {
   name: string;
   isCompressed: boolean;
-  data: Buffer;
+  data: Uint8Array;
 };
 
 export class GArchive {
   assets: { [key: string]: File } = {};
 
   async load(filePath: string) {
-    const buffer = new BufferWrapper(await readFile(filePath));
+    const buffer = new Buffer(await readFile(filePath));
 
     if (buffer.readInt32() != 27191) {
       throw new Error(`${filePath} is not GArchive!!!`);
@@ -49,7 +49,7 @@ export class GArchive {
 
       await decoder.init();
 
-      return Buffer.from(decoder.decode(data));
+      return decoder.decode(data);
     }
     return data;
   }

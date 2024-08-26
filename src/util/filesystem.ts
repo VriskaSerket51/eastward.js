@@ -34,7 +34,7 @@ export async function exists(filePath: string) {
   }
 }
 
-export async function readFile(filePath: string) {
+export async function readFile(filePath: string): Promise<Uint8Array> {
   if (typeof window != "undefined") {
     if (!rootHandle) {
       throw new Error("1");
@@ -54,7 +54,7 @@ export async function readFile(filePath: string) {
     }
     const fileHandle = await dirHandle.getFileHandle(fileName);
     const file = await fileHandle.getFile();
-    return Buffer.from(await file.arrayBuffer());
+    return new Uint8Array(await file.arrayBuffer());
   } else {
     return fs.readFile(filePath);
   }

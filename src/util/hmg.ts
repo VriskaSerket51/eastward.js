@@ -1,14 +1,14 @@
 import { decompressBlock } from "lz4js";
-import { BufferWrapper } from "@/buffer";
+import { Buffer } from "@/buffer";
 
 export type HMG = {
   width: number;
   height: number;
-  data: Buffer;
+  data: Uint8Array;
 };
 
-export function decodeHMG(raw: Buffer): HMG {
-  const buffer = new BufferWrapper(raw);
+export function decodeHMG(raw: Uint8Array): HMG {
+  const buffer = new Buffer(raw);
   if (buffer.readChars(3) != "PGF") {
     throw new Error("This file is not Hmg File!!!");
   }
@@ -28,8 +28,8 @@ export function decodeHMG(raw: Buffer): HMG {
   buffer.readBytes(dummyLen2); // Another Dummy Chunk
 
   const compressedData = buffer.readBytes(compressedSize);
-  const data = Buffer.alloc(width * height * 4);
-  decompressBlock(Buffer.from(compressedData), data, 0, compressedSize, 0);
+  const data = new Uint8Array(width * height * 4);
+  decompressBlock(Uint8Array.from(compressedData), data, 0, compressedSize, 0);
   return {
     width,
     height,

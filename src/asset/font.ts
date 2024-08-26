@@ -26,7 +26,7 @@ export class BMFontAsset extends Asset {
 }
 
 export class TTFFontAsset extends Asset {
-  ttf: Buffer | null = null;
+  ttf: Uint8Array | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);

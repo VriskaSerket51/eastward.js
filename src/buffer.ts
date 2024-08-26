@@ -1,9 +1,11 @@
-export class BufferWrapper {
+export class Buffer {
   raw;
   offset = 0;
+  viewer;
 
-  constructor(buffer: Buffer) {
-    this.raw = buffer;
+  constructor(raw: Uint8Array) {
+    this.raw = raw;
+    this.viewer = new DataView(raw.buffer);
   }
 
   readBytes(count: number) {
@@ -19,19 +21,20 @@ export class BufferWrapper {
   }
 
   readInt8() {
-    const value = this.raw.readInt8(this.offset);
+    DataView;
+    const value = this.viewer.getInt8(this.offset);
     this.offset += 1;
     return value;
   }
 
   readUInt8() {
-    const value = this.raw.readUInt8(this.offset);
+    const value = this.viewer.getUint8(this.offset);
     this.offset += 1;
     return value;
   }
 
   readInt32() {
-    const value = this.raw.readInt32LE(this.offset);
+    const value = this.viewer.getInt32(this.offset, true);
     this.offset += 4;
     return value;
   }
