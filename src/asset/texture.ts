@@ -1,6 +1,8 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
+import { uint8ArrayToBase64 } from "@/util/base64";
 import { decodeHMG, HMG } from "@/util/hmg";
+import { encodePng } from "@lunapaint/png-codec";
 
 export class TextureAsset extends Asset {
   hmg: HMG | null = null;
@@ -52,15 +54,6 @@ export class TextureAsset extends Asset {
     await sharp(data, { raw: { width, height, channels: 4 } })
       .png()
       .toFile(filePath);
-    // const image = await new Promise<Jimp>((resolve, reject) => {
-    //   new Jimp({ data, width, height }, (err, image) => {
-    //     if (err) {
-    //       reject(err);
-    //     }
-    //     resolve(image);
-    //   });
-    // });
-    // await image.writeAsync(filePath);
   }
 
   saveFileSync(filePath: string) {
@@ -69,8 +62,15 @@ export class TextureAsset extends Asset {
     }
     super.beforeSave(filePath);
     const { width, height, data } = this.hmg;
-    // const image = new Jimp({ data, width, height });
-    // image.write(filePath);
+  }
+
+  async toPNG() {
+    if (!this.hmg) {
+      return null;
+    }
+    const { width, height, data } = this.hmg;
+    const encoded = await encodePng({ data, width, height });
+    return encoded.data;
   }
 
   toBMP() {
@@ -88,7 +88,7 @@ export class TextureAsset extends Asset {
     const fHeader = new Uint8Array(fileHeaderSize);
     const fileHeader = new DataView(fHeader.buffer);
     fileHeader.setUint8(0, "B".charCodeAt(0)); // Signature
-    fileHeader.setUint8(0, "B".charCodeAt(0)); // Signature
+    fileHeader.setUint8(1, "M".charCodeAt(0)); // Signature
     fileHeader.setUint32(2, fileSize, true); // File size
     fileHeader.setUint32(6, 0, true); // Reserved
     fileHeader.setUint32(10, headerSize, true); // Pixel data offset
@@ -116,5 +116,21 @@ export class TextureAsset extends Asset {
 
     // Combine headers and pixel data into one buffer
     return new Uint8Array([...fHeader, ...dHeader, ...raw]);
+  }
+
+  toBMPBase64() {
+    const buffer = this.toBMP();
+    if (!buffer) {
+      return null;
+    }
+    return uint8ArrayToBase64(buffer);
+  }
+
+  async toPNGBase64() {
+    const buffer = await this.toPNG();
+    if (!buffer) {
+      return null;
+    }
+    return uint8ArrayToBase64(buffer);
   }
 }
