@@ -157,7 +157,7 @@ export class Eastward {
   }
 
   async loadFile(filePath: string) {
-    const physicalPath = path.join(this.root, filePath);
+    const physicalPath = path.join(this.root, "content", "game", filePath);
     if (await exists(physicalPath)) {
       return await readFile(physicalPath);
     }
@@ -230,9 +230,9 @@ export class Eastward {
     };
   }
 
-  getAssetNodes() {
+  getAssetNodes(type?: string) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string"
+      (node) => typeof node.filePath == "string" && (!type || node.type == type)
     );
   }
 

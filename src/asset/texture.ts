@@ -3,6 +3,7 @@ import { Eastward } from "@/eastward";
 import { uint8ArrayToBase64 } from "@/util/base64";
 import { decodeHMG, HMG } from "@/util/hmg";
 import { encodePng } from "@lunapaint/png-codec";
+import { writeFile } from "fs/promises";
 
 export class TextureAsset extends Asset {
   hmg: HMG | null = null;
@@ -49,11 +50,11 @@ export class TextureAsset extends Asset {
       return;
     }
     super.beforeSave(filePath);
-    const { width, height, data } = this.hmg;
-    const sharp = (await import("sharp")).default;
-    await sharp(data, { raw: { width, height, channels: 4 } })
-      .png()
-      .toFile(filePath);
+    const data = await this.toPNG();
+    if (!data) {
+      return;
+    }
+    await writeFile(filePath, data);
   }
 
   saveFileSync(filePath: string) {
