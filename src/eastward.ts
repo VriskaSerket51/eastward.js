@@ -193,7 +193,7 @@ export class Eastward {
     return new TextDecoder().decode(data);
   }
 
-  async loadAsset(path: string) {
+  async loadAsset<T extends Asset>(path: string): Promise<T | null> {
     const node = this.nodes[path];
     if (!node) {
       return null;
@@ -206,17 +206,17 @@ export class Eastward {
     }
 
     if (node.parent && !assetLoader.skipParent) {
-      await this.loadAsset(node.parent);
+      await this.loadAsset<Asset>(node.parent);
     }
 
     if (node.cachedAsset) {
-      return node.cachedAsset;
+      return node.cachedAsset as T;
     }
 
     const asset = new assetLoader.loader(this, node);
     await asset.load();
     node.cachedAsset = asset;
-    return asset;
+    return asset as T;
   }
 
   findTexture(path: string) {
