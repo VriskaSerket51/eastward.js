@@ -138,6 +138,7 @@ class SQNodeRoot extends SQNode {
           if (node.args.length > 0) {
             obj.args = node.args;
           }
+          break;
       }
     } else if (node instanceof SQNodeContext) {
       contexts.length = 0;
@@ -150,9 +151,9 @@ class SQNodeRoot extends SQNode {
 
     const children: any[] = [];
     const childContexts = [...contexts];
-    node.children.forEach((child) =>
-      this._build(children, child, childContexts, directives)
-    );
+    for (const child of node.children) {
+      this._build(children, child, childContexts, directives);
+    }
 
     if (children.length > 0) {
       obj.children = children;
@@ -181,10 +182,7 @@ class SQNodeAction extends SQNode {
     }
 
     const value =
-      this.name == "say" ||
-      this.name == "shout" ||
-      this.name == "emo" ||
-      this.name == "wait";
+      this.name == "say" || this.name == "shout" || this.name == "emo";
 
     if (super.isNeeded()) {
       return true;
