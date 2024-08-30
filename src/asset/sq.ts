@@ -181,7 +181,10 @@ class SQNodeAction extends SQNode {
     }
 
     const value =
-      this.name == "say" || this.name == "shout" || this.name == "emo";
+      this.name == "say" ||
+      this.name == "shout" ||
+      this.name == "emo" ||
+      this.name == "wait";
 
     if (super.isNeeded()) {
       return true;
