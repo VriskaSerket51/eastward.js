@@ -1,4 +1,4 @@
-import { Eastward } from "@/eastward";
+import { Eastward, LuaObject } from "@/eastward";
 import path from "@/util/path";
 import fs from "fs";
 
@@ -9,10 +9,10 @@ export class AssetNode {
   type = "";
   filePath: string | boolean = false;
   tags: string[] | null = null;
-  properties: any;
-  objectFiles: any;
-  deployMeta: any;
-  dependency: any;
+  properties: LuaObject | null = null;
+  objectFiles: LuaObject | null = null;
+  deployMeta: LuaObject | null = null;
+  dependency: LuaObject | null = null;
   parentNode: AssetNode | null = null;
   children: { [key: string]: AssetNode } = {};
   cachedAsset: Asset | null = null;

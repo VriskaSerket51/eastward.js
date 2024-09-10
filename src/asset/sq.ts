@@ -2,7 +2,6 @@ import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
-import { Lua } from "wasmoon-lua5.1";
 
 export class SqScriptAsset extends Asset {
   raw: any;
@@ -13,10 +12,10 @@ export class SqScriptAsset extends Asset {
 
   async load() {
     let data = await this.eastward.loadMsgPackFile(
-      this.node.objectFiles.packed_data
+      this.node.objectFiles!.packed_data
     );
     if (!data) {
-      data = await this.eastward.loadJSONFile(this.node.objectFiles.data);
+      data = await this.eastward.loadJSONFile(this.node.objectFiles!.data);
     }
     this.raw = data;
     if (!data) {
@@ -90,20 +89,24 @@ class SQNode {
 
 class SQNodeRoot extends SQNode {
   file;
+  cache: any;
   constructor(data: any) {
     super(data);
     this.file = data.file as string;
   }
 
-  build() {
-    const root = {
+  build(force?: boolean) {
+    if (this.cache && !force) {
+      return this.cache;
+    }
+    this.cache = {
       type: "root",
       file: this.file,
       children: [],
     };
-    this._build(root.children, this, [], []);
+    this._build(this.cache.children, this, [], []);
 
-    return root;
+    return this.cache;
   }
 
   _build(list: any[], node: SQNode, contexts: string[], directives: string[]) {

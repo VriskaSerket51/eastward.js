@@ -13,7 +13,7 @@ export class TextureAsset extends Asset {
   }
 
   async load() {
-    let pixmap;
+    let atlasInfo = { x: 0, y: 0, w: 0, h: 0 };
     const texture = this.eastward.findTexture(this.node.path);
     if (!texture) {
       throw new Error(this.node.path);
@@ -27,22 +27,48 @@ export class TextureAsset extends Asset {
         const atlasTexturesCache = [];
         for (const atlasInfo of data.atlases) {
           const texpath = atlasInfo.name;
-          atlasTexturesCache.push(
-            await this.eastward.loadFile(`${base}/${texpath}`)
-          );
+          const pixmap = await this.eastward.loadFile(`${base}/${texpath}`);
+          atlasTexturesCache.push(pixmap && decodeHMG(pixmap));
         }
         textureGroup.atlasTexturesCache = atlasTexturesCache;
       }
       const atlasId = texture.atlasId;
-      pixmap = textureGroup.atlasTexturesCache[atlasId - 1];
+      atlasInfo.x = Number(texture.x);
+      atlasInfo.y = Number(texture.y);
+      atlasInfo.w = Number(texture.w);
+      atlasInfo.h = Number(texture.h);
+      this.hmg = textureGroup.atlasTexturesCache[atlasId - 1];
     } else {
-      pixmap = await this.eastward.loadFile(this.node.objectFiles.pixmap);
+      const pixmap = await this.eastward.loadFile(this.node.objectFiles!.pixmap);
+      if (pixmap) {
+        this.hmg = decodeHMG(pixmap);
+      }
     }
-    if (!pixmap) {
-      // console.error(`null pixmap at ${node.path}`);
+    if (!this.hmg) {
       return;
     }
-    this.hmg = decodeHMG(pixmap);
+    if (atlasInfo.w != 0 && atlasInfo.h != 0) {
+      const { x, y, w: width, h: height } = atlasInfo;
+      const data = new Uint8Array(width * height * 4);
+
+      for (let row = 0; row < height; row++) {
+        for (let col = 0; col < width; col++) {
+          const sourceIndex = ((y + row) * this.hmg.width + (x + col)) * 4;
+          const destIndex = (row * width + col) * 4;
+
+          data[destIndex] = this.hmg.data[sourceIndex]; // R
+          data[destIndex + 1] = this.hmg.data[sourceIndex + 1]; // G
+          data[destIndex + 2] = this.hmg.data[sourceIndex + 2]; // B
+          data[destIndex + 3] = this.hmg.data[sourceIndex + 3]; // A
+        }
+      }
+
+      this.hmg = {
+        width,
+        height,
+        data,
+      };
+    }
   }
 
   async saveFile(filePath: string) {

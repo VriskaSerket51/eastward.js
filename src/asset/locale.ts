@@ -16,11 +16,11 @@ export class LocalePackAsset extends Asset {
   async load() {
     const langs = ["en", "ko", "de", "es", "fr", "zh-TW", "zh-CN", "ja"];
     this.config = await this.eastward.loadJSONFile(
-      this.node.objectFiles.config
+      this.node.objectFiles!.config
     );
     for (const lang of langs) {
       const luaData = await this.eastward.loadTextFile(
-        `${this.node.objectFiles.data}/${lang}`
+        `${this.node.objectFiles!.data}/${lang}`
       );
       if (!luaData) {
         return;

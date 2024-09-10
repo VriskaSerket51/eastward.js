@@ -2,8 +2,10 @@ import { decode } from "@msgpack/msgpack";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
-import { exists, initBrowser, readFile } from "@/util/filesystem";
-import path from "@/util/path";
+import { exists, readFile } from "@/util/filesystem";
+import path from "path";
+
+export type LuaObject = { [key: string]: string };
 
 type Package = {
   compress: boolean;
@@ -17,10 +19,10 @@ type AssetIndex = {
   type: string;
   filePath: string;
   tags: string[];
-  properties: any;
-  objectFiles: any;
-  deployMeta: any;
-  dependency: any;
+  properties: LuaObject;
+  objectFiles: LuaObject;
+  deployMeta: LuaObject;
+  dependency: LuaObject;
 };
 
 type LoaderFunc = new (eastward: Eastward, node: AssetNode) => Asset;
@@ -61,7 +63,7 @@ export class Eastward {
     await this._loadTextureLibrary(textureLibraryIndex);
   }
 
-  private _skipEmptyTable(obj: any) {
+  private _skipEmptyTable(obj: LuaObject) {
     if (!obj) {
       return null;
     }
@@ -244,13 +246,5 @@ export class Eastward {
         await asset.saveFile(dstPath);
       }
     }
-  }
-}
-
-export class EastwardBrowser {
-  async init() {
-    const dirHandle = await window.showDirectoryPicker();
-    initBrowser(dirHandle);
-    return new Eastward(dirHandle.name);
   }
 }
