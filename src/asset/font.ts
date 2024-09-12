@@ -10,6 +10,10 @@ export class BMFontAsset extends Asset {
     super(eastward, node);
   }
 
+  get type(): string {
+    return Asset.Type.Text;
+  }
+
   async load() {
     this.fnt = await this.eastward.loadTextFile(this.node.objectFiles!.font);
   }
@@ -36,6 +40,10 @@ export class TTFFontAsset extends Asset {
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
+  }
+
+  get type(): string {
+    return Asset.Type.Binary;
   }
 
   async load() {

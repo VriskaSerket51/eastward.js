@@ -12,6 +12,10 @@ export class TextureAsset extends Asset {
     super(eastward, node);
   }
 
+  get type(): string {
+    return Asset.Type.Image;
+  }
+
   async load() {
     let atlasInfo = { x: 0, y: 0, w: 0, h: 0 };
     const texture = this.eastward.findTexture(this.node.path);
@@ -39,7 +43,9 @@ export class TextureAsset extends Asset {
       atlasInfo.h = Number(texture.h);
       this.hmg = textureGroup.atlasTexturesCache[atlasId - 1];
     } else {
-      const pixmap = await this.eastward.loadFile(this.node.objectFiles!.pixmap);
+      const pixmap = await this.eastward.loadFile(
+        this.node.objectFiles!.pixmap
+      );
       if (pixmap) {
         this.hmg = decodeHMG(pixmap);
       }

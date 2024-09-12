@@ -8,6 +8,10 @@ export class MSpriteAsset extends Asset {
     super(eastward, node);
   }
 
+  get type(): string {
+    return Asset.Type.Text;
+  }
+
   async load() {}
 
   async saveFile(filePath: string) {

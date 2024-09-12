@@ -31,6 +31,17 @@ export class Asset {
     this.node = node;
   }
 
+  static Type = {
+    Text: "text",
+    Image: "image",
+    Binary: "binary",
+    None: "none",
+  };
+
+  get type() {
+    return Asset.Type.None;
+  }
+
   async load() {}
 
   beforeSave(filePath: string) {

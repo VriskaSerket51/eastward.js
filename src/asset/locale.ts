@@ -12,6 +12,10 @@ export class LocalePackAsset extends Asset {
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
+  
+  get type(): string {
+    return Asset.Type.Text;
+  }
 
   async load() {
     const langs = ["en", "ko", "de", "es", "fr", "zh-TW", "zh-CN", "ja"];

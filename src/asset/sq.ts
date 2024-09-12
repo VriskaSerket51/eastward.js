@@ -6,8 +6,13 @@ import fs from "fs/promises";
 export class SqScriptAsset extends Asset {
   raw: any;
   root: SQNodeRoot | null = null;
+  
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
+  }
+
+  get type(): string {
+    return Asset.Type.Text;
   }
 
   async load() {

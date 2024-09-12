@@ -1,6 +1,7 @@
 .*/
 src/
 test/
+extract/
 package-lock.json
 
 tsconfig.json
