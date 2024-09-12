@@ -40,10 +40,9 @@
   },
   "dependencies": {
     "@lunapaint/png-codec": "^0.2.0",
+    "@metastable/cppzst": "^2.1.0",
     "@msgpack/msgpack": "^3.0.0-beta2",
-    "@types/wicg-file-system-access": "^2023.10.5",
     "lz4js": "^0.2.0",
-    "wasmoon-lua5.1": "^1.18.10",
-    "zstddec": "^0.1.0"
+    "wasmoon-lua5.1": "^1.18.10"
   }
 }

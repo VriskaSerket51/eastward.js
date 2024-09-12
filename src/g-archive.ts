@@ -1,18 +1,20 @@
-import { Buffer } from "./buffer";
+import { Buffer as BufferWrapper } from "./buffer";
 import { readFile } from "@/util/filesystem";
-import { ZSTDDecoder } from "zstddec";
+import { compress, decompress } from "@metastable/cppzst";
+import { createWriteStream, WriteStream } from "fs";
 
 type File = {
   name: string;
   isCompressed: boolean;
   data: Uint8Array;
+  decompressedSize: number;
 };
 
 export class GArchive {
   assets: { [key: string]: File } = {};
 
   async load(filePath: string) {
-    const buffer = new Buffer(await readFile(filePath));
+    const buffer = new BufferWrapper(await readFile(filePath));
 
     if (buffer.readInt32() != 27191) {
       throw new Error(`${filePath} is not GArchive!!!`);
@@ -31,8 +33,13 @@ export class GArchive {
         name,
         isCompressed,
         data,
+        decompressedSize,
       };
     }
+  }
+
+  getFileNames() {
+    return Object.keys(this.assets);
   }
 
   checkFileData(name: string) {
@@ -40,29 +47,90 @@ export class GArchive {
   }
 
   async getFileData(name: string) {
-    if (!this.assets[name]) {
+    const assets = this.assets[name];
+    if (!assets) {
       return null;
     }
-    const { isCompressed, data } = this.assets[name];
+    const { isCompressed, data } = assets;
     if (isCompressed) {
-      const decoder = new ZSTDDecoder();
-
-      await decoder.init();
-
-      return decoder.decode(data);
+      assets.isCompressed = false;
+      assets.data = await decompress(Buffer.from(data));
     }
-    return data;
+    return assets.data;
   }
 
-  // async setFileData(name: string, data: Buffer) {
-  //   const decoder = new ZSTDDecoder();
+  async setFileData(name: string, data: Uint8Array) {
+    const assets = this.assets[name];
+    if (!assets) {
+      this.assets[name] = {
+        name,
+        isCompressed: false,
+        data: data,
+        decompressedSize: data.byteLength,
+      };
+      return;
+    }
+    assets.isCompressed = false;
+    assets.data = data;
+    assets.decompressedSize = data.byteLength;
+  }
 
-  //     await decoder.init();
+  async saveFile(filePath: string) {
+    const write = (
+      stream: WriteStream,
+      chunk: string | Buffer | Uint8Array
+    ) => {
+      return new Promise<void>((resolve, reject) => {
+        stream.write(chunk, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+    };
 
-  //   this.assets[name] = {
-  //     name,
-  //     isCompressed: true,
-  //     data: Buffer.from(compress(data)),
-  //   };
-  // }
+    let offset =
+      Object.values(this.assets)
+        .map((asset) => asset.name.length + 1 + 16)
+        .reduce((a, b) => a + b, 8);
+
+    const stream = createWriteStream(filePath);
+    await write(stream, new Uint8Array(Uint32Array.from([27191]).buffer));
+    await write(
+      stream,
+      new Uint8Array(Uint32Array.from([Object.keys(this.assets).length]).buffer)
+    );
+
+    for (const asset of Object.values(this.assets)) {
+      const { name, isCompressed, decompressedSize } = asset;
+      if (!isCompressed) {
+        asset.isCompressed = true;
+        asset.data = await compress(Buffer.from(asset.data));
+      }
+
+      await write(stream, name);
+      await write(stream, Uint8Array.from([0]));
+      await write(
+        stream,
+        new Uint8Array(
+          Uint32Array.from([
+            offset,
+            2,
+            decompressedSize,
+            asset.data.byteLength,
+          ]).buffer
+        )
+      );
+
+      offset += asset.data.byteLength;
+    }
+
+    for (const asset of Object.values(this.assets)) {
+      const { data } = asset;
+
+      await write(stream, data);
+    }
+  }
 }

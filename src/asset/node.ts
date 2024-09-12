@@ -1,5 +1,5 @@
 import { Eastward, LuaObject } from "@/eastward";
-import path from "@/util/path";
+import path from "path";
 import fs from "fs";
 
 export class AssetNode {

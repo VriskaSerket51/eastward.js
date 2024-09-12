@@ -63,6 +63,13 @@ export class Eastward {
     await this._loadTextureLibrary(textureLibraryIndex);
   }
 
+  getArchive(name: string) {
+    if (this.archives[name]) {
+      return this.archives[name];
+    }
+    return null;
+  }
+
   private _skipEmptyTable(obj: LuaObject) {
     if (!obj) {
       return null;

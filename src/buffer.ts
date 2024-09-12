@@ -21,7 +21,6 @@ export class Buffer {
   }
 
   readInt8() {
-    DataView;
     const value = this.viewer.getInt8(this.offset);
     this.offset += 1;
     return value;

@@ -11,17 +11,23 @@ export class BMFontAsset extends Asset {
   }
 
   async load() {
-    this.fnt = await this.eastward.loadTextFile(this.node.objectFiles.font);
+    this.fnt = await this.eastward.loadTextFile(this.node.objectFiles!.font);
   }
 
   async saveFile(filePath: string) {
+    if (!this.fnt) {
+      return;
+    }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.fnt || "err");
+    await fs.writeFile(filePath, this.fnt);
   }
 
   saveFileSync(filePath: string) {
+    if (!this.fnt) {
+      return;
+    }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.fnt || "err");
+    writeFileSync(filePath, this.fnt);
   }
 }
 
@@ -33,16 +39,22 @@ export class TTFFontAsset extends Asset {
   }
 
   async load() {
-    this.ttf = await this.eastward.loadFile(this.node.objectFiles.font);
+    this.ttf = await this.eastward.loadFile(this.node.objectFiles!.font);
   }
 
   async saveFile(filePath: string) {
+    if (!this.ttf) {
+      return;
+    }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.ttf || "err");
+    await fs.writeFile(filePath, this.ttf);
   }
 
   saveFileSync(filePath: string) {
+    if (!this.ttf) {
+      return;
+    }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.ttf || "err");
+    writeFileSync(filePath, this.ttf);
   }
 }
