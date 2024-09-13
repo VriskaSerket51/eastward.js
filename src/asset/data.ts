@@ -50,7 +50,7 @@ export class DataCsvAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Csv;
+    return Asset.Type.Json;
   }
 
   async toString(): Promise<string | null> {
@@ -86,7 +86,7 @@ export class DataXlsAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Text;
+    return Asset.Type.Json;
   }
 
   async toString(): Promise<string | null> {

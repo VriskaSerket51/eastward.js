@@ -68,8 +68,8 @@ export function registerAll(eastward: Eastward) {
   );
 
   eastward.registerAssetLoader("fsm_scheme", FSMSchemeAsset, true);
-  eastward.registerAssetLoader("quest_sceme", QuestSchemeAsset, true);
-  eastward.registerAssetLoader("tb_sceme", TBSchemeAsset, true);
+  eastward.registerAssetLoader("quest_scheme", QuestSchemeAsset, true);
+  eastward.registerAssetLoader("tb_scheme", TBSchemeAsset, true);
 
   eastward.registerAssetLoader("bt_script", BTScriptAsset, true);
   eastward.registerAssetLoader("shader_script", ShaderScriptAsset, true);
