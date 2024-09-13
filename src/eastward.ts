@@ -245,6 +245,18 @@ export class Eastward {
     );
   }
 
+  getAssetNodesWith(...type: string[]) {
+    return Object.values(this.nodes).filter(
+      (node) => typeof node.filePath == "string" && type.includes(node.type)
+    );
+  }
+
+  getAssetNodesExcept(...type: string[]) {
+    return Object.values(this.nodes).filter(
+      (node) => typeof node.filePath == "string" && !type.includes(node.type)
+    );
+  }
+
   async extractTo(dst: string) {
     for (const [filePath, node] of Object.entries(this.nodes)) {
       const asset = await this.loadAsset(filePath);
