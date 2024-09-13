@@ -1,5 +1,6 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
+import { uint8ArrayToBase64 } from "@/util/base64";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
@@ -12,6 +13,10 @@ export class BMFontAsset extends Asset {
 
   get type(): string {
     return Asset.Type.Text;
+  }
+
+  async toString(): Promise<string | null> {
+    return this.fnt;
   }
 
   async load() {
@@ -44,6 +49,13 @@ export class TTFFontAsset extends Asset {
 
   get type(): string {
     return Asset.Type.Binary;
+  }
+
+  async toString(): Promise<string | null> {
+    if (!this.ttf) {
+      return null;
+    }
+    return uint8ArrayToBase64(this.ttf);
   }
 
   async load() {

@@ -44,6 +44,10 @@ export class Asset {
     return Asset.Type.None;
   }
 
+  async toString(): Promise<string | null> {
+    return null;
+  }
+
   async load() {}
 
   beforeSave(filePath: string) {

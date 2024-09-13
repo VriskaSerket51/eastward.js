@@ -3,7 +3,9 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class MSpriteAsset extends Asset {
+export class TextAsset extends Asset {
+  data: string | null = null;
+
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
@@ -13,16 +15,26 @@ export class MSpriteAsset extends Asset {
   }
 
   async toString(): Promise<string | null> {
-    return null;
+    return this.data;
   }
 
-  async load() {}
+  async load() {
+    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.src);
+  }
 
   async saveFile(filePath: string) {
+    if (!this.data) {
+      return;
+    }
     super.beforeSave(filePath);
+    await fs.writeFile(filePath, this.data);
   }
 
   saveFileSync(filePath: string) {
+    if (!this.data) {
+      return;
+    }
     super.beforeSave(filePath);
+    writeFileSync(filePath, this.data);
   }
 }

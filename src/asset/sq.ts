@@ -3,16 +3,20 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class SqScriptAsset extends Asset {
+export class SQScriptAsset extends Asset {
   raw: any;
   root: SQNodeRoot | null = null;
-  
+
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
 
   get type(): string {
     return Asset.Type.Json;
+  }
+
+  async toString(): Promise<string | null> {
+    return JSON.stringify(this.raw);
   }
 
   async load() {

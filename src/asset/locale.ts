@@ -12,9 +12,15 @@ export class LocalePackAsset extends Asset {
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
-  
+
   get type(): string {
     return Asset.Type.Json;
+  }
+
+  async toString(): Promise<string | null> {
+    const config = this.config;
+    const data = this.data;
+    return JSON.stringify({ config, data });
   }
 
   async load() {

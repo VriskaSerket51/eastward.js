@@ -16,6 +16,10 @@ export class TextureAsset extends Asset {
     return Asset.Type.Image;
   }
 
+  async toString(): Promise<string | null> {
+    return await this.toPNGBase64();
+  }
+
   async load() {
     let atlasInfo = { x: 0, y: 0, w: 0, h: 0 };
     const texture = this.eastward.findTexture(this.node.path);
