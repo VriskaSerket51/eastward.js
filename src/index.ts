@@ -20,5 +20,6 @@ export * from "@/asset/text";
 export * from "@/asset/texture";
 
 export * from "@/util/hmg";
+export { registerAll } from "@/util/register";
 
 export * from "@/g-archive";
