@@ -2,6 +2,10 @@ export { Eastward } from "@/eastward";
 
 export * from "@/asset/node";
 
+export * from "@/asset/animator-data";
+export * from "@/asset/asset-map";
+export * from "@/asset/code-tileset";
+export * from "@/asset/com-script";
 export * from "@/asset/data";
 export * from "@/asset/font";
 export * from "@/asset/glsl";

@@ -1,6 +1,7 @@
 import { AnimatorDataAsset } from "@/asset/animator-data";
 import { AssetMapAsset } from "@/asset/asset-map";
 import { CodeTilesetAsset } from "@/asset/code-tileset";
+import { ComScriptAsset } from "@/asset/com-script";
 import { DataCsvAsset, DataJsonAsset, DataXlsAsset } from "@/asset/data";
 import { BMFontAsset, TTFFontAsset } from "@/asset/font";
 import { GLSLAsset } from "@/asset/glsl";
@@ -19,6 +20,7 @@ export function registerAll(eastward: Eastward) {
   eastward.registerAssetLoader("animator_data", AnimatorDataAsset, true);
   eastward.registerAssetLoader("asset_map", AssetMapAsset, true);
   eastward.registerAssetLoader("code_tileset", CodeTilesetAsset, true);
+  eastward.registerAssetLoader("com_script", ComScriptAsset, true);
 
   eastward.registerAssetLoader("data_json", DataJsonAsset, true);
   eastward.registerAssetLoader("data_csv", DataCsvAsset, true);

@@ -19,6 +19,8 @@ export class LuaScript extends Asset {
   }
 
   async load() {
+
+    // TODO
     // this.src = await this.eastward.loadFile(this.node.objectFiles!.src);
   }
 
