@@ -3,40 +3,38 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class LuaAsset extends Asset {
-  data: Uint8Array | null = null;
+export class Deck2DAsset extends Asset {
+  def: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
 
   get type(): string {
-    return Asset.Type.Binary;
+    return Asset.Type.Text;
   }
 
   async toString(): Promise<string | null> {
-    return null;
+    return this.def;
   }
 
   async load() {
-
-    // TODO
-    // this.src = await this.eastward.loadFile(this.node.objectFiles!.src);
+    this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.data);
+    await fs.writeFile(filePath, this.def);
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.data);
+    writeFileSync(filePath, this.def);
   }
 }

@@ -3,8 +3,8 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class TBSchemeText extends Asset {
-  data: string | null = null;
+export class UIStyleAsset extends Asset {
+  def: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -15,26 +15,26 @@ export class TBSchemeText extends Asset {
   }
 
   async toString(): Promise<string | null> {
-    return this.data;
+    return this.def;
   }
 
   async load() {
-    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.data);
+    this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.data);
+    await fs.writeFile(filePath, this.def);
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.data);
+    writeFileSync(filePath, this.def);
   }
 }

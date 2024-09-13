@@ -3,8 +3,8 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class ShaderScriptAsset extends Asset {
-  src: string | null = null;
+export class StylesheetAsset extends Asset {
+  def: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -15,26 +15,26 @@ export class ShaderScriptAsset extends Asset {
   }
 
   async toString(): Promise<string | null> {
-    return this.src;
+    return this.def;
   }
 
   async load() {
-    this.src = await this.eastward.loadTextFile(this.node.objectFiles!.src);
+    this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
   }
 
   async saveFile(filePath: string) {
-    if (!this.src) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.src);
+    await fs.writeFile(filePath, this.def);
   }
 
   saveFileSync(filePath: string) {
-    if (!this.src) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.src);
+    writeFileSync(filePath, this.def);
   }
 }

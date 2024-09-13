@@ -3,8 +3,8 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
-export class ComScriptAsset extends Asset {
-  script: string | null = null;
+export class PrefabAsset extends Asset {
+  def: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -15,26 +15,26 @@ export class ComScriptAsset extends Asset {
   }
 
   async toString(): Promise<string | null> {
-    return this.script;
+    return this.def;
   }
 
   async load() {
-    this.script = await this.eastward.loadTextFile(this.node.objectFiles!.script);
+    this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
   }
 
   async saveFile(filePath: string) {
-    if (!this.script) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.script);
+    await fs.writeFile(filePath, this.def);
   }
 
   saveFileSync(filePath: string) {
-    if (!this.script) {
+    if (!this.def) {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.script);
+    writeFileSync(filePath, this.def);
   }
 }
