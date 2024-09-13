@@ -14,7 +14,7 @@ export class LocalePackAsset extends Asset {
   }
   
   get type(): string {
-    return Asset.Type.Text;
+    return Asset.Type.Json;
   }
 
   async load() {
