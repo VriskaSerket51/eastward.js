@@ -19,7 +19,7 @@ export class ComScriptAsset extends Asset {
   }
 
   async load() {
-    this.script = await this.eastward.loadTextFile(this.node.objectFiles!.src);
+    this.script = await this.eastward.loadTextFile(this.node.objectFiles!.script);
   }
 
   async saveFile(filePath: string) {

@@ -4,7 +4,7 @@ import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
 export class AnimatorDataAsset extends Asset {
-  src: string | null = null;
+  data: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -15,26 +15,26 @@ export class AnimatorDataAsset extends Asset {
   }
 
   async toString(): Promise<string | null> {
-    return this.src;
+    return this.data;
   }
 
   async load() {
-    this.src = await this.eastward.loadTextFile(this.node.objectFiles!.src);
+    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.data);
   }
 
   async saveFile(filePath: string) {
-    if (!this.src) {
+    if (!this.data) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.src);
+    await fs.writeFile(filePath, this.data);
   }
 
   saveFileSync(filePath: string) {
-    if (!this.src) {
+    if (!this.data) {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.src);
+    writeFileSync(filePath, this.data);
   }
 }

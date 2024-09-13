@@ -19,7 +19,7 @@ export class TextAsset extends Asset {
   }
 
   async load() {
-    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.src);
+    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.data);
   }
 
   async saveFile(filePath: string) {
