@@ -19,7 +19,7 @@ export class SceneAsset extends Asset {
   }
 
   async load() {
-    this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
+    // TODO
   }
 
   async saveFile(filePath: string) {
