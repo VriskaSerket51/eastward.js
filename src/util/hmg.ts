@@ -1,4 +1,5 @@
-import { decompressBlock } from "lz4js";
+import { compressBlock, compressBound, decompressBlock } from "lz4js";
+import { decodePng, encodePng } from "@lunapaint/png-codec";
 import { Buffer } from "@/buffer";
 
 export type HMG = {
@@ -6,6 +7,43 @@ export type HMG = {
   height: number;
   data: Uint8Array;
 };
+
+export async function hmg2png(hmg: HMG) {
+  const { width, height, data } = hmg;
+  const encoded = await encodePng({ data, width, height });
+
+  return encoded.data;
+}
+
+export async function png2hmg(png: Uint8Array) {
+  const image = (await decodePng(png)).image;
+
+  return image as HMG;
+}
+
+export function encodeHMG(hmg: HMG): Uint8Array {
+  const { width, height, data } = hmg;
+
+  let compressedData = new Uint8Array(compressBound(data.byteLength));
+
+  const count = compressBlock(data, compressedData, 0, data.length, 0);
+  compressedData = compressedData.slice(0, count);
+
+  const result = new Uint8Array(24 + count);
+  result.set(new TextEncoder().encode("PGF"), 0);
+  result[3] = 0;
+  result.set(
+    new Uint8Array(Uint32Array.from([24 + count, count, width, height]).buffer),
+    4
+  );
+  result[20] = 32;
+  result[21] = 1;
+  result[22] = 0;
+  result[23] = 0;
+  result.set(compressedData, 24);
+
+  return result;
+}
 
 export function decodeHMG(raw: Uint8Array): HMG {
   const buffer = new Buffer(raw);

@@ -1,8 +1,7 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
 import { uint8ArrayToBase64 } from "@/util/base64";
-import { decodeHMG, HMG } from "@/util/hmg";
-import { encodePng } from "@lunapaint/png-codec";
+import { decodeHMG, HMG, hmg2png } from "@/util/hmg";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
@@ -106,9 +105,7 @@ export class TextureAsset extends Asset {
     if (!this.hmg) {
       return null;
     }
-    const { width, height, data } = this.hmg;
-    const encoded = await encodePng({ data, width, height });
-    return encoded.data;
+    return await hmg2png(this.hmg);
   }
 
   toBMP() {
