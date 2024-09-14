@@ -173,6 +173,45 @@ export class TextureAsset extends Asset {
   }
 }
 
+export class LutTextureAsset extends Asset {
+  texture: Uint8Array | null = null;
+
+  constructor(eastward: Eastward, node: AssetNode) {
+    super(eastward, node);
+  }
+
+  get type(): string {
+    return Asset.Type.Image;
+  }
+
+  async toString(): Promise<string | null> {
+    if (!this.texture) {
+      return null;
+    }
+    return uint8ArrayToBase64(this.texture);
+  }
+
+  async load() {
+    this.texture = await this.eastward.loadFile(this.node.objectFiles!.texture);
+  }
+
+  async saveFile(filePath: string) {
+    if (!this.texture) {
+      return;
+    }
+    super.beforeSave(filePath);
+    await fs.writeFile(filePath, this.texture);
+  }
+
+  saveFileSync(filePath: string) {
+    if (!this.texture) {
+      return;
+    }
+    super.beforeSave(filePath);
+    writeFileSync(filePath, this.texture);
+  }
+}
+
 export class MultiTextureAsset extends Asset {
   data: string | null = null;
 
