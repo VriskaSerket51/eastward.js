@@ -42,6 +42,12 @@ export class GArchive {
     return Object.keys(this.assets);
   }
 
+  async getDirectoryData(dirName: string) {
+    return this.getFileNames().filter((fileName) =>
+      fileName.startsWith(dirName)
+    );
+  }
+
   checkFileData(name: string) {
     return this.assets[name] != null;
   }
@@ -91,10 +97,9 @@ export class GArchive {
       });
     };
 
-    let offset =
-      Object.values(this.assets)
-        .map((asset) => asset.name.length + 1 + 16)
-        .reduce((a, b) => a + b, 8);
+    let offset = Object.values(this.assets)
+      .map((asset) => asset.name.length + 1 + 16)
+      .reduce((a, b) => a + b, 8);
 
     const stream = createWriteStream(filePath);
     await write(stream, new Uint8Array(Uint32Array.from([27191]).buffer));

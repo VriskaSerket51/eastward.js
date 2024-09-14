@@ -2,7 +2,7 @@ import { decode } from "@msgpack/msgpack";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
-import { exists, readFile } from "@/util/filesystem";
+import { exists, readDirectory, readFile } from "@/util/filesystem";
 import path from "path";
 
 export type LuaObject = { [key: string]: string };
@@ -150,6 +150,19 @@ export class Eastward {
     }
 
     this.textureLibrary.textureMap = textureMap;
+  }
+
+  async loadDirectory(dirPath: string) {
+    const physicalPath = path.join(this.root, dirPath);
+    if (await exists(physicalPath)) {
+      return await readDirectory(physicalPath);
+    }
+    const [archive, ...rest] = dirPath.split("/");
+    if (!this.archives[archive]) {
+      return null;
+    }
+    const virtualPath = rest.join("/");
+    return await this.archives[archive].getDirectoryData(virtualPath);
   }
 
   async checkFileExists(filePath: string) {
