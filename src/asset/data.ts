@@ -30,7 +30,7 @@ export class DataJsonAsset extends Asset {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.data);
+    await fs.writeFile(filePath, JSON.stringify(this.data));
   }
 
   saveFileSync(filePath: string) {
@@ -38,7 +38,7 @@ export class DataJsonAsset extends Asset {
       return;
     }
     super.beforeSave(filePath);
-    writeFileSync(filePath, this.data);
+    writeFileSync(filePath, JSON.stringify(this.data));
   }
 }
 

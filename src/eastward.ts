@@ -4,16 +4,7 @@ import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
 import { exists, readDirectory, readFile } from "@/util/filesystem";
 import path from "path";
-
-export type LuaObject = { [key: string]: string };
-
-type Package = {
-  compress: boolean;
-  hash_pack: string;
-  hash_src: string;
-  id: string;
-  mode: string;
-};
+import { LuaObject } from "@/type";
 
 type AssetIndex = {
   type: string;
@@ -32,26 +23,52 @@ type AssetLoader = {
   skipParent: boolean;
 };
 
+export const LOG_LEVEL = {
+  DEBUG: 1,
+  INFO: 2,
+  WARN: 3,
+  ERROR: 4,
+};
+
+export type Config = {
+  root: string;
+  logLevel?: number;
+};
+
 export class Eastward {
-  root;
+  config;
   archives: { [key: string]: GArchive } = {};
   nodes: { [key: string]: AssetNode } = {};
   assetLoaders: { [key: string]: AssetLoader } = {};
   textureLibrary: any = {};
 
-  constructor(root: string) {
-    this.root = root;
+  constructor(config: Config) {
+    const { root, logLevel = LOG_LEVEL.INFO } = config;
+    this.config = { root, logLevel };
   }
 
   async init() {
-    const filePath = path.join(this.root, "content", "packages.json");
+    type Package = {
+      compress: boolean;
+      hash_pack: string;
+      hash_src: string;
+      id: string;
+      mode: string;
+    };
+
+    const { root, logLevel } = this.config;
+
+    const filePath = path.join(root, "content", "packages.json");
     const json = JSON.parse(new TextDecoder().decode(await readFile(filePath)));
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
-        const filePath = path.join(this.root, "content", "game", `${id}.g`);
+        const filePath = path.join(root, "content", "game", `${id}.g`);
         this.archives[id] = new GArchive();
         await this.archives[id].load(filePath);
-        // console.log(`${id}.g loaded`);
+
+        if (logLevel <= LOG_LEVEL.INFO) {
+          console.info(`${id}.g loaded`);
+        }
       }
     }
 
@@ -153,7 +170,9 @@ export class Eastward {
   }
 
   async loadDirectory(dirPath: string) {
-    const physicalPath = path.join(this.root, dirPath);
+    const { root } = this.config;
+
+    const physicalPath = path.join(root, dirPath);
     if (await exists(physicalPath)) {
       return await readDirectory(physicalPath);
     }
@@ -166,7 +185,9 @@ export class Eastward {
   }
 
   async checkFileExists(filePath: string) {
-    const physicalPath = path.join(this.root, filePath);
+    const { root } = this.config;
+
+    const physicalPath = path.join(root, filePath);
     if (await exists(physicalPath)) {
       return true;
     }
@@ -179,7 +200,9 @@ export class Eastward {
   }
 
   async loadFile(filePath: string) {
-    const physicalPath = path.join(this.root, "content", "game", filePath);
+    const { root } = this.config;
+
+    const physicalPath = path.join(root, "content", "game", filePath);
     if (await exists(physicalPath)) {
       return await readFile(physicalPath);
     }
@@ -216,14 +239,21 @@ export class Eastward {
   }
 
   async loadAsset<T extends Asset>(path: string): Promise<T | null> {
+    const { logLevel } = this.config;
+
     const node = this.nodes[path];
     if (!node) {
       return null;
     }
     const type = node.type;
+    if (type == "folder") {
+      return null;
+    }
     const assetLoader = this.assetLoaders[type];
     if (!assetLoader) {
-      // console.error(`asset with type '${type}' hasn't been registered`);
+      if (logLevel <= LOG_LEVEL.WARN) {
+        console.warn(`asset with type '${type}' hasn't been registered`);
+      }
       return null;
     }
 
@@ -271,11 +301,20 @@ export class Eastward {
   }
 
   async extractTo(dst: string) {
+    const { logLevel } = this.config;
+
     for (const [filePath, node] of Object.entries(this.nodes)) {
-      const asset = await this.loadAsset(filePath);
-      if (asset && typeof node.filePath == "string") {
-        const dstPath = path.join(dst, node.filePath);
-        await asset.saveFile(dstPath);
+      try {
+        const asset = await this.loadAsset(filePath);
+        if (asset && typeof node.filePath == "string") {
+          const dstPath = path.join(dst, node.filePath);
+          await asset.saveFile(dstPath);
+        }
+      } catch (err) {
+        if (logLevel <= LOG_LEVEL.ERROR) {
+          console.error(err);
+          console.error(`Error at ${filePath}`);
+        }
       }
     }
   }

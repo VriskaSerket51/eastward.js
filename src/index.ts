@@ -1,4 +1,5 @@
-export { Eastward } from "@/eastward";
+export { Eastward, LOG_LEVEL } from "@/eastward";
+export { GArchive } from "@/g-archive";
 
 export * from "@/asset/node";
 
@@ -14,6 +15,7 @@ export * from "@/asset/locale";
 export * from "@/asset/lua";
 export * from "@/asset/m-sprite";
 export * from "@/asset/material";
+export * from "@/asset/mesh";
 export * from "@/asset/physics";
 export * from "@/asset/prefab";
 export * from "@/asset/render-target";
@@ -29,5 +31,3 @@ export * from "@/asset/ui-style";
 
 export * from "@/util/hmg";
 export { registerAll } from "@/util/register";
-
-export * from "@/g-archive";
