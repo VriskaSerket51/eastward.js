@@ -16,24 +16,69 @@ npm install eastward.js
 
 ## How to use
 
-Sample for extract some assets from the root game folder.
+Example for extract some assets from the root game folder.
+
 ```javascript
-import { Eastward } from "eastward.js";
-import { BMFontAsset, TTFFontAsset } from "eastward.js";
-import { TextureAsset } from "eastward.js";
-import { LocalePackAsset } from "eastward.js";
-import { SqScriptAsset } from "eastward.js";
+import { Eastward, registerAll } from "eastward.js";
 
 const root = "C:/SteamLibrary/steamapps/common/Eastward";
-const eastward = new Eastward(root);
-
+const eastward = new Eastward({ root });
 await eastward.init();
-eastward.registerAssetLoader("font_bmfont", BMFontAsset, true);
-eastward.registerAssetLoader("font_ttf", TTFFontAsset, true);
-eastward.registerAssetLoader("texture", TextureAsset, true);
-eastward.registerAssetLoader("locale_pack", LocalePackAsset, true);
-eastward.registerAssetLoader("sq_script", SqScriptAsset, true);
+registerAll(eastward); // register all asset types
 
 await eastward.extractTo("./extract");
-console.log("extract finished");
+
+console.log("extracting finished");
+```
+
+Or you can just extract some types of assets.
+
+```javascript
+import { Eastward, LocalePackAsset } from "eastward.js";
+
+const root = "C:/SteamLibrary/steamapps/common/Eastward";
+const eastward = new Eastward({ root });
+await eastward.init();
+eastward.registerAssetLoader("locale_pack", LocalePackAsset);
+
+await eastward.extractTo("./extract_locale_pack");
+
+console.log("extracting locale_pack finished");
+```
+
+Example for reading asset from archive.
+
+```javascript
+import { GArchive } from "eastward.js";
+import { writeFile } from "fs/promises";
+
+const archive = new GArchive();
+await archive.load(
+  "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
+);
+
+const localePackData = await archive.getFileData(
+  "1fbba5dfab829f507358f58c1c2dc59a"
+);
+if (localePackData == null) {
+  process.exit(-1);
+}
+writeFile("./CH1.lua", localePackData);
+```
+
+Example for writing asset to archive.
+
+```javascript
+import { GArchive } from "eastward.js";
+import { readFile } from "fs/promises";
+
+const archive = new GArchive();
+await archive.load(
+  "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
+);
+const data = await readFile("./CH.lua");
+
+await archive.setFileData("1fbba5dfab829f507358f58c1c2dc59a", data);
+
+await archive.saveFile("./locale.g");
 ```
