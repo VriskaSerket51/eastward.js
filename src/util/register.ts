@@ -10,6 +10,7 @@ import { LocalePackAsset } from "@/asset/locale";
 import { LuaAsset } from "@/asset/lua";
 import { MSpriteAsset } from "@/asset/m-sprite";
 import { MaterialAsset } from "@/asset/material";
+import { MeshAsset } from "@/asset/mesh";
 import { PhysicsBodyDefAsset, PhysicsMaterialAsset } from "@/asset/physics";
 import { PrefabAsset } from "@/asset/prefab";
 import { RenderTargetAsset } from "@/asset/render-target";
@@ -21,14 +22,18 @@ import {
 } from "@/asset/scheme";
 import {
   BTScriptAsset,
-  ComScriptAsset,
+  COMScriptAsset,
   ShaderScriptAsset,
 } from "@/asset/script";
 import { SQScriptAsset } from "@/asset/sq";
 import { StoryGraphAsset } from "@/asset/story-graph";
 import { StylesheetAsset } from "@/asset/stylesheet";
 import { TextAsset } from "@/asset/text";
-import { MultiTextureAsset, TextureAsset } from "@/asset/texture";
+import {
+  LutTextureAsset,
+  MultiTextureAsset,
+  TextureAsset,
+} from "@/asset/texture";
 import { UIStyleAsset } from "@/asset/ui-style";
 import { Eastward } from "@/eastward";
 
@@ -54,6 +59,7 @@ export function registerAll(eastward: Eastward) {
   eastward.registerAssetLoader("lua", LuaAsset, true);
   eastward.registerAssetLoader("msprite", MSpriteAsset, true);
   eastward.registerAssetLoader("material", MaterialAsset, true);
+  eastward.registerAssetLoader("mesh", MeshAsset, true);
 
   eastward.registerAssetLoader("physics_body_def", PhysicsBodyDefAsset, true);
   eastward.registerAssetLoader("physics_material", PhysicsMaterialAsset, true);
@@ -61,6 +67,7 @@ export function registerAll(eastward: Eastward) {
   eastward.registerAssetLoader("prefab", PrefabAsset, true);
   eastward.registerAssetLoader("render_target", RenderTargetAsset, true);
 
+  eastward.registerAssetLoader("scene", SceneAsset, true);
   eastward.registerAssetLoader(
     "scene_portal_graph",
     ScenePortalGraphAsset,
@@ -73,7 +80,7 @@ export function registerAll(eastward: Eastward) {
 
   eastward.registerAssetLoader("bt_script", BTScriptAsset, true);
   eastward.registerAssetLoader("shader_script", ShaderScriptAsset, true);
-  eastward.registerAssetLoader("com_script", ComScriptAsset, true);
+  eastward.registerAssetLoader("com_script", COMScriptAsset, true);
   eastward.registerAssetLoader("sq_script", SQScriptAsset, true);
 
   eastward.registerAssetLoader("story_graph", StoryGraphAsset, true);
@@ -82,6 +89,8 @@ export function registerAll(eastward: Eastward) {
   eastward.registerAssetLoader("text", TextAsset, true);
 
   eastward.registerAssetLoader("texture", TextureAsset, true);
+  eastward.registerAssetLoader("lut_texture", LutTextureAsset, true);
   eastward.registerAssetLoader("multi_texture", MultiTextureAsset, true);
+
   eastward.registerAssetLoader("ui_style", UIStyleAsset, true);
 }
