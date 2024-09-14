@@ -282,6 +282,14 @@ export class Eastward {
     };
   }
 
+  getAssetNode(path: string) {
+    const node = this.nodes[path];
+    if (!node) {
+      return null;
+    }
+    return node;
+  }
+
   getAssetNodes(type?: string) {
     return Object.values(this.nodes).filter(
       (node) => typeof node.filePath == "string" && (!type || node.type == type)
