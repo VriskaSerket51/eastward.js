@@ -39,7 +39,7 @@ export class BTScriptAsset extends Asset {
   }
 }
 
-export class ComScriptAsset extends Asset {
+export class COMScriptAsset extends Asset {
   script: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
