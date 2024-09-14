@@ -43,7 +43,7 @@ export class Eastward {
   textureLibrary: any = {};
 
   constructor(config: Config) {
-    const { root, logLevel = LOG_LEVEL.INFO } = config;
+    const { root, logLevel = LOG_LEVEL.ERROR } = config;
     this.config = { root, logLevel };
   }
 
