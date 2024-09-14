@@ -76,7 +76,7 @@ const archive = new GArchive();
 await archive.load(
   "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
 );
-const data = await readFile("./CH.lua");
+const data = await readFile("./CH1.lua");
 
 await archive.setFileData("1fbba5dfab829f507358f58c1c2dc59a", data);
 
