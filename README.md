@@ -16,6 +16,33 @@ npm install eastward.js
 
 ## How to use
 
+### Command Line usage
+
+`npx eastward --help` for help.
+
+If you installed eastward.js globally,
+```sh
+npm install -g eastward.js
+```
+you can just use `eastward --help`
+
+```
+Usage: eastward.js [MODE] [OPTION]... [FILE]...
+Mode and Option:
+        extract         Extract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted.
+                --root          game root directory
+                -T, --type      asset type; --help type to get list
+                --out           output directory
+        unzip           Extract data from .g files to output directory.
+                --out           output directory
+                [FILE]          .g files
+        zip             Archive all data from root directory to output .g file.
+                --root          root directory
+                --out           output .g file
+```
+
+### Source code usage
+
 Example for extract some assets from the root game folder.
 
 ```javascript
@@ -57,13 +84,11 @@ await archive.load(
   "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
 );
 
-const localePackData = await archive.getFileData(
-  "1fbba5dfab829f507358f58c1c2dc59a"
-);
-if (localePackData == null) {
+const data = await archive.getFileData("1fbba5dfab829f507358f58c1c2dc59a");
+if (data == null) {
   process.exit(-1);
 }
-writeFile("./CH1.lua", localePackData);
+writeFile("./CH1.lua", data);
 ```
 
 Example for writing asset to archive.
