@@ -27,7 +27,7 @@ npm install -g eastward.js
 you can just use `eastward --help`
 
 ```
-Usage: eastward.js [MODE] [OPTION]... [FILE]...
+Usage: eastward [MODE] [OPTION]... [FILE]...
 Mode and Option:
         extract         Extract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted.
                 --root          game root directory
