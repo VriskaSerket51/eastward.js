@@ -30,4 +30,4 @@ export * from "@/asset/texture";
 export * from "@/asset/ui-style";
 
 export * from "@/util/hmg";
-export { registerAll } from "@/util/register";
+export { register, registerAll, AssetType, ASSET_TYPES } from "@/util/register";

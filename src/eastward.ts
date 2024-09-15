@@ -32,7 +32,7 @@ export const LOG_LEVEL = {
 
 export type Config = {
   root: string;
-  logLevel?: number;
+  verbose?: number;
 };
 
 export class Eastward {
@@ -43,8 +43,8 @@ export class Eastward {
   textureLibrary: any = {};
 
   constructor(config: Config) {
-    const { root, logLevel = LOG_LEVEL.ERROR } = config;
-    this.config = { root, logLevel };
+    const { root, verbose = LOG_LEVEL.ERROR } = config;
+    this.config = { root, verbose };
   }
 
   async init() {
@@ -56,7 +56,7 @@ export class Eastward {
       mode: string;
     };
 
-    const { root, logLevel } = this.config;
+    const { root, verbose } = this.config;
 
     const filePath = path.join(root, "content", "packages.json");
     const json = JSON.parse(new TextDecoder().decode(await readFile(filePath)));
@@ -66,7 +66,7 @@ export class Eastward {
         this.archives[id] = new GArchive();
         await this.archives[id].load(filePath);
 
-        if (logLevel <= LOG_LEVEL.INFO) {
+        if (verbose <= LOG_LEVEL.INFO) {
           console.info(`${id}.g loaded`);
         }
       }
@@ -239,7 +239,7 @@ export class Eastward {
   }
 
   async loadAsset<T extends Asset>(path: string): Promise<T | null> {
-    const { logLevel } = this.config;
+    const { verbose } = this.config;
 
     const node = this.nodes[path];
     if (!node) {
@@ -251,7 +251,7 @@ export class Eastward {
     }
     const assetLoader = this.assetLoaders[type];
     if (!assetLoader) {
-      if (logLevel <= LOG_LEVEL.WARN) {
+      if (verbose <= LOG_LEVEL.WARN) {
         console.warn(`asset with type '${type}' hasn't been registered`);
       }
       return null;
@@ -309,7 +309,7 @@ export class Eastward {
   }
 
   async extractTo(dst: string) {
-    const { logLevel } = this.config;
+    const { verbose } = this.config;
 
     for (const [filePath, node] of Object.entries(this.nodes)) {
       try {
@@ -319,9 +319,9 @@ export class Eastward {
           await asset.saveFile(dstPath);
         }
       } catch (err) {
-        if (logLevel <= LOG_LEVEL.ERROR) {
-          console.error(err);
-          console.error(`Error at ${filePath}`);
+        const e = err as Error;
+        if (verbose <= LOG_LEVEL.ERROR) {
+          console.error(`Error at ${filePath}: ${e.message}`);
         }
       }
     }
