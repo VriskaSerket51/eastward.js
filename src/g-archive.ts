@@ -2,6 +2,8 @@ import { Buffer as BufferWrapper } from "./buffer";
 import { readFile } from "@/util/filesystem";
 import { compress, decompress } from "@metastable/cppzst";
 import { createWriteStream, WriteStream } from "fs";
+import { writeFile } from "fs/promises";
+import path from "path";
 
 type File = {
   name: string;
@@ -136,6 +138,15 @@ export class GArchive {
       const { data } = asset;
 
       await write(stream, data);
+    }
+  }
+
+  async extracTo(dst: string) {
+    for (const fileName of this.getFileNames()) {
+      const data = await this.getFileData(fileName);
+      if (data) {
+        await writeFile(path.join(dst, fileName), data);
+      }
     }
   }
 }
