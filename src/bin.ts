@@ -27,7 +27,7 @@ async function main() {
     const others = args["_"];
 
     if (args["--help"]) {
-      if (others.pop() == "type") {
+      if (others.shift() == "type") {
         ASSET_TYPES.forEach(console.log);
         process.exit();
       }
@@ -54,7 +54,7 @@ async function main() {
       process.exit();
     }
 
-    const mode = others.pop();
+    const mode = others.shift();
     if (!mode) {
       throw new Error("Required option: [MODE]");
     }
@@ -95,23 +95,9 @@ async function main() {
           const files = others;
           for (const file of files) {
             const dir = path.parse(file).name;
-            const archive = new GArchive();
+            const archive = new GArchive({ verbose });
             await archive.load(file);
-
-            for (const fileName of archive.getFileNames()) {
-              const data = await archive.getFileData(fileName);
-              if (data) {
-                const filePath = path.join(path.join(out, dir), fileName);
-                const dirName = path.dirname(filePath);
-                if (!(await exists(dirName))) {
-                  await mkdir(dirName);
-                }
-                await writeFile(filePath, data);
-                if (verbose <= LOG_LEVEL.INFO) {
-                  console.info(fileName);
-                }
-              }
-            }
+            await archive.extracTo(path.join(out, dir));
           }
         }
         break;
@@ -143,11 +129,11 @@ async function main() {
           const files: string[] = [];
           await readAll(root, files);
 
-          const archive = new GArchive();
+          const archive = new GArchive({ verbose });
           for (const file of files) {
             const data = await readFile(path.join(root, file));
             await archive.setFileData(file, data);
-            if (verbose <= LOG_LEVEL.INFO) {
+            if (verbose >= LOG_LEVEL.INFO) {
               console.info(file);
             }
           }
@@ -157,7 +143,7 @@ async function main() {
         break;
 
       default:
-        throw new Error(`Unknown option: ${mode}`);
+        throw new Error(`Unknown mode: ${mode}\n try eastward --help`);
     }
   } catch (err) {
     const e = err as Error;

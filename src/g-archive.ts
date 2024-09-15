@@ -1,3 +1,4 @@
+import { LOG_LEVEL } from "@/eastward";
 import { Buffer as BufferWrapper } from "./buffer";
 import { exists, readFile } from "@/util/filesystem";
 import { compress, decompress } from "@metastable/cppzst";
@@ -12,8 +13,20 @@ type File = {
   decompressedSize: number;
 };
 
+type Config = {
+  verbose?: number;
+};
+
 export class GArchive {
+  config;
   assets: { [key: string]: File } = {};
+
+  constructor(config: Config) {
+    const { verbose = LOG_LEVEL.ERROR } = config;
+    this.config = {
+      verbose,
+    };
+  }
 
   async load(filePath: string) {
     const buffer = new BufferWrapper(await readFile(filePath));
@@ -138,6 +151,25 @@ export class GArchive {
       const { data } = asset;
 
       await write(stream, data);
+    }
+  }
+
+  async extracTo(dst: string) {
+    const { verbose } = this.config;
+
+    for (const fileName of this.getFileNames()) {
+      const data = await this.getFileData(fileName);
+      if (data) {
+        const filePath = path.join(dst, fileName);
+        const dirName = path.dirname(filePath);
+        if (!(await exists(dirName))) {
+          await mkdir(dirName, { recursive: true });
+        }
+        await writeFile(filePath, data);
+        if (verbose >= LOG_LEVEL.INFO) {
+          console.info(fileName);
+        }
+      }
     }
   }
 }

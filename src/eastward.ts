@@ -24,10 +24,10 @@ type AssetLoader = {
 };
 
 export const LOG_LEVEL = {
-  DEBUG: 1,
+  DEBUG: 3,
   INFO: 2,
-  WARN: 3,
-  ERROR: 4,
+  WARN: 1,
+  ERROR: 0,
 };
 
 export type Config = {
@@ -63,10 +63,10 @@ export class Eastward {
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
         const filePath = path.join(root, "content", "game", `${id}.g`);
-        this.archives[id] = new GArchive();
+        this.archives[id] = new GArchive({ verbose });
         await this.archives[id].load(filePath);
 
-        if (verbose <= LOG_LEVEL.INFO) {
+        if (verbose >= LOG_LEVEL.INFO) {
           console.info(`${id}.g loaded`);
         }
       }
@@ -251,7 +251,7 @@ export class Eastward {
     }
     const assetLoader = this.assetLoaders[type];
     if (!assetLoader) {
-      if (verbose <= LOG_LEVEL.WARN) {
+      if (verbose >= LOG_LEVEL.WARN) {
         console.warn(`asset with type '${type}' hasn't been registered`);
       }
       return null;
@@ -317,13 +317,13 @@ export class Eastward {
         if (asset && typeof node.filePath == "string") {
           const dstPath = path.join(dst, node.filePath);
           await asset.saveFile(dstPath);
-          if (verbose <= LOG_LEVEL.INFO) {
+          if (verbose >= LOG_LEVEL.INFO) {
             console.info(node.filePath);
           }
         }
       } catch (err) {
         const e = err as Error;
-        if (verbose <= LOG_LEVEL.ERROR) {
+        if (verbose >= LOG_LEVEL.ERROR) {
           console.error(`Error at ${filePath}: ${e.message}`);
         }
       }
