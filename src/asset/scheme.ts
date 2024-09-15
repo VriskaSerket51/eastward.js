@@ -11,7 +11,7 @@ export class FSMSchemeAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Text;
+    return Asset.Type.Lua;
   }
 
   async toString(): Promise<string | null> {

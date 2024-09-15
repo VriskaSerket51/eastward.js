@@ -11,7 +11,7 @@ export class GLSLAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Text;
+    return Asset.Type.GLSL;
   }
 
   async toString(): Promise<string | null> {

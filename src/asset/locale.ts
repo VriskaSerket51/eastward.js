@@ -14,7 +14,7 @@ export class LocalePackAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Json;
+    return Asset.Type.JSON;
   }
 
   async toString(): Promise<string | null> {
