@@ -13,18 +13,15 @@ async function main() {
   console.log();
 
   try {
-    const args = arg(
-      {
-        "--help": Boolean,
-        "--verbose": arg.COUNT,
-        "--root": String,
-        "--out": String,
-        "--type": [String],
-        "-v": "--verbose",
-        "-T": "--type",
-      },
-      { argv: ["--help"] }
-    );
+    const args = arg({
+      "--help": Boolean,
+      "--verbose": arg.COUNT,
+      "--root": String,
+      "--out": String,
+      "--type": [String],
+      "-v": "--verbose",
+      "-T": "--type",
+    });
 
     const others = args["_"];
 
@@ -40,9 +37,7 @@ async function main() {
         "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
       );
       console.log("\t\t--root\t\tgame root directory");
-      console.log(
-        "\t\t-T, --type\tasset type; --help type to get list"
-      );
+      console.log("\t\t-T, --type\tasset type; --help type to get list");
       console.log("\t\t--out\t\toutput directory");
 
       console.log("\tunzip\t\tExtract data from .g files to output directory.");
@@ -60,7 +55,7 @@ async function main() {
 
     const mode = others.pop();
     if (!mode) {
-      throw new Error("Required option: --mode");
+      throw new Error("Required option: [MODE]");
     }
     const verbose = args["--verbose"];
 
