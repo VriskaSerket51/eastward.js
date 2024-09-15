@@ -4,9 +4,12 @@
   "description": "Typescript library for imort/export assets of the video game Eastward.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
+  "bin": {
+    "eastward": "dist/bin.js"
+  },
   "scripts": {
     "test": "tsx watch ./test/index.ts",
+    "test:bin": "npm run build && node ./dist/bin.js",
     "build": "rimraf ./dist && tsc && tsc-alias",
     "start": "npm run build && node ./dist/index.js",
     "dev": "tsx watch ./src/index.ts"
@@ -31,17 +34,18 @@
   "homepage": "https://github.com/VriskaSerket51/eastward.js#readme",
   "devDependencies": {
     "@types/lz4js": "^0.2.1",
-    "@types/node": "^22.5.0",
+    "@types/node": "^22.5.5",
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.17.0",
-    "typescript": "^5.5.4"
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
   },
   "dependencies": {
     "@lunapaint/png-codec": "^0.2.0",
     "@metastable/cppzst": "^2.1.0",
     "@msgpack/msgpack": "^3.0.0-beta2",
+    "arg": "^5.0.2",
     "lz4js": "^0.2.0",
     "wasmoon-lua5.1": "^1.18.10"
   }
