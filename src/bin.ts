@@ -7,10 +7,7 @@ import { readdir, readFile, stat } from "fs/promises";
 import path from "path";
 
 async function main() {
-  const name = "eastward";
-  const version = process.env.npm_package_version;
-
-  console.log(`${name} ${version} by IREVES`);
+  console.log(`eastward.js by IREVES`);
   console.log("https://github.com/VriskaSerket51/eastward.js");
   console.log();
   console.log();
@@ -37,7 +34,7 @@ async function main() {
         process.exit();
       }
 
-      console.log("Usage: eastward.js [MODE] [OPTION]... [FILE]...");
+      console.log("Usage: eastward [MODE] [OPTION]... [FILE]...");
       console.log("Mode and Option:");
       console.log(
         "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
