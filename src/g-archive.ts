@@ -140,18 +140,4 @@ export class GArchive {
       await write(stream, data);
     }
   }
-
-  async extracTo(dst: string) {
-    for (const fileName of this.getFileNames()) {
-      const data = await this.getFileData(fileName);
-      if (data) {
-        const filePath = path.join(dst, fileName);
-        const dirName = path.dirname(filePath);
-        if (!(await exists(dirName))) {
-          await mkdir(dirName);
-        }
-        await writeFile(filePath, data);
-      }
-    }
-  }
 }

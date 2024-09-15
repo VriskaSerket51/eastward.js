@@ -317,6 +317,9 @@ export class Eastward {
         if (asset && typeof node.filePath == "string") {
           const dstPath = path.join(dst, node.filePath);
           await asset.saveFile(dstPath);
+          if (verbose <= LOG_LEVEL.INFO) {
+            console.info(node.filePath);
+          }
         }
       } catch (err) {
         const e = err as Error;

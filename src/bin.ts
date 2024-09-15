@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { Eastward } from "@/eastward";
+import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
+import { exists } from "@/util/filesystem";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import { readdir, readFile, stat } from "fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "fs/promises";
 import path from "path";
 
 async function main() {
@@ -57,7 +58,7 @@ async function main() {
     if (!mode) {
       throw new Error("Required option: [MODE]");
     }
-    const verbose = args["--verbose"];
+    const verbose = args["--verbose"] ?? LOG_LEVEL.ERROR;
 
     switch (mode) {
       case "extract":
@@ -96,7 +97,21 @@ async function main() {
             const dir = path.parse(file).name;
             const archive = new GArchive();
             await archive.load(file);
-            await archive.extracTo(path.join(out, dir));
+
+            for (const fileName of archive.getFileNames()) {
+              const data = await archive.getFileData(fileName);
+              if (data) {
+                const filePath = path.join(path.join(out, dir), fileName);
+                const dirName = path.dirname(filePath);
+                if (!(await exists(dirName))) {
+                  await mkdir(dirName);
+                }
+                await writeFile(filePath, data);
+                if (verbose <= LOG_LEVEL.INFO) {
+                  console.info(fileName);
+                }
+              }
+            }
           }
         }
         break;
@@ -132,11 +147,17 @@ async function main() {
           for (const file of files) {
             const data = await readFile(path.join(root, file));
             await archive.setFileData(file, data);
+            if (verbose <= LOG_LEVEL.INFO) {
+              console.info(file);
+            }
           }
 
           await archive.saveFile(out);
         }
         break;
+
+      default:
+        throw new Error(`Unknown option: ${mode}`);
     }
   } catch (err) {
     const e = err as Error;
