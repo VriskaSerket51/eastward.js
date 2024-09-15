@@ -75,14 +75,14 @@ async function main() {
           const eastward = new Eastward({ root, verbose });
           await eastward.init();
 
-          const types = args["--type"];
-          if (!types || types.length == 0) {
+          const types = args["--type"] || [];
+          if (types.length == 0) {
             registerAll(eastward);
           } else {
             types.forEach((type) => register(eastward, type as AssetType));
           }
 
-          await eastward.extractTo(out);
+          await eastward.extractTo(out, ...types);
         }
         break;
 

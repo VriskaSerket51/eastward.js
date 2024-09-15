@@ -296,24 +296,29 @@ export class Eastward {
     );
   }
 
-  getAssetNodesWith(...type: string[]) {
+  getAssetNodesWith(...types: string[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && type.includes(node.type)
+      (node) => typeof node.filePath == "string" && types.includes(node.type)
     );
   }
 
-  getAssetNodesExcept(...type: string[]) {
+  getAssetNodesExcept(...types: string[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && !type.includes(node.type)
+      (node) => typeof node.filePath == "string" && !types.includes(node.type)
     );
   }
 
-  async extractTo(dst: string) {
+  async extractTo(dst: string, ...types: string[]) {
     const { verbose } = this.config;
 
-    for (const [filePath, node] of Object.entries(this.nodes)) {
+    const nodes =
+      types && types.length > 0
+        ? this.getAssetNodesWith(...types)
+        : this.getAssetNodes();
+
+    for (const node of nodes) {
       try {
-        const asset = await this.loadAsset(filePath);
+        const asset = await this.loadAsset(node.path);
         if (asset && typeof node.filePath == "string") {
           const dstPath = path.join(dst, node.filePath);
           await asset.saveFile(dstPath);
@@ -324,7 +329,7 @@ export class Eastward {
       } catch (err) {
         const e = err as Error;
         if (verbose >= LOG_LEVEL.ERROR) {
-          console.error(`Error at ${filePath}: ${e.message}`);
+          console.error(`Error at ${node.path}: ${e.message}`);
         }
       }
     }
