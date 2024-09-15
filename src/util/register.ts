@@ -37,60 +37,60 @@ import {
 import { UIStyleAsset } from "@/asset/ui-style";
 import { Eastward } from "@/eastward";
 
+const typeMap = {
+  animator_data: AnimatorDataAsset,
+  asset_map: AssetMapAsset,
+  code_tileset: CodeTilesetAsset,
+  data_json: DataJsonAsset,
+  data_csv: DataCsvAsset,
+  data_xls: DataXlsAsset,
+  deck2d: Deck2DAsset,
+  effect: EffectAsset,
+  font_bmfont: BMFontAsset,
+  font_ttf: TTFFontAsset,
+  glsl: GLSLAsset,
+  locale_pack: LocalePackAsset,
+  lua: LuaAsset,
+  msprite: MSpriteAsset,
+  material: MaterialAsset,
+  mesh: MeshAsset,
+  physics_body_def: PhysicsBodyDefAsset,
+  physics_material: PhysicsMaterialAsset,
+  prefab: PrefabAsset,
+  render_target: RenderTargetAsset,
+  scene: SceneAsset,
+  scene_portal_graph: ScenePortalGraphAsset,
+  fsm_scheme: FSMSchemeAsset,
+  quest_scheme: QuestSchemeAsset,
+  tb_scheme: TBSchemeAsset,
+  bt_script: BTScriptAsset,
+  shader_script: ShaderScriptAsset,
+  com_script: COMScriptAsset,
+  sq_script: SQScriptAsset,
+  story_graph: StoryGraphAsset,
+  stylesheet: StylesheetAsset,
+  text: TextAsset,
+  texture: TextureAsset,
+  lut_texture: LutTextureAsset,
+  multi_texture: MultiTextureAsset,
+  ui_style: UIStyleAsset,
+};
+
+export type AssetType = keyof typeof typeMap;
+export const ASSET_TYPES = Object.keys(typeMap);
+
+export function register(eastward: Eastward, type: AssetType) {
+  const assetLoader = typeMap[type];
+  if (!assetLoader) {
+    throw new Error(
+      `type ${type} is not supported or not a valid eastward asset type!`
+    );
+  }
+  eastward.registerAssetLoader(type, assetLoader, true);
+}
+
 export function registerAll(eastward: Eastward) {
-  eastward.registerAssetLoader("animator_data", AnimatorDataAsset, true);
-  eastward.registerAssetLoader("asset_map", AssetMapAsset, true);
-  eastward.registerAssetLoader("code_tileset", CodeTilesetAsset, true);
-
-  eastward.registerAssetLoader("data_json", DataJsonAsset, true);
-  eastward.registerAssetLoader("data_csv", DataCsvAsset, true);
-  eastward.registerAssetLoader("data_xls", DataXlsAsset, true);
-
-  eastward.registerAssetLoader("deck2d", Deck2DAsset, true);
-
-  eastward.registerAssetLoader("effect", EffectAsset, true);
-
-  eastward.registerAssetLoader("font_bmfont", BMFontAsset, true);
-  eastward.registerAssetLoader("font_ttf", TTFFontAsset, true);
-
-  eastward.registerAssetLoader("glsl", GLSLAsset, true);
-
-  eastward.registerAssetLoader("locale_pack", LocalePackAsset, true);
-  eastward.registerAssetLoader("lua", LuaAsset, true);
-  eastward.registerAssetLoader("msprite", MSpriteAsset, true);
-  eastward.registerAssetLoader("material", MaterialAsset, true);
-  eastward.registerAssetLoader("mesh", MeshAsset, true);
-
-  eastward.registerAssetLoader("physics_body_def", PhysicsBodyDefAsset, true);
-  eastward.registerAssetLoader("physics_material", PhysicsMaterialAsset, true);
-
-  eastward.registerAssetLoader("prefab", PrefabAsset, true);
-  eastward.registerAssetLoader("render_target", RenderTargetAsset, true);
-
-  eastward.registerAssetLoader("scene", SceneAsset, true);
-  eastward.registerAssetLoader(
-    "scene_portal_graph",
-    ScenePortalGraphAsset,
-    true
-  );
-
-  eastward.registerAssetLoader("fsm_scheme", FSMSchemeAsset, true);
-  eastward.registerAssetLoader("quest_scheme", QuestSchemeAsset, true);
-  eastward.registerAssetLoader("tb_scheme", TBSchemeAsset, true);
-
-  eastward.registerAssetLoader("bt_script", BTScriptAsset, true);
-  eastward.registerAssetLoader("shader_script", ShaderScriptAsset, true);
-  eastward.registerAssetLoader("com_script", COMScriptAsset, true);
-  eastward.registerAssetLoader("sq_script", SQScriptAsset, true);
-
-  eastward.registerAssetLoader("story_graph", StoryGraphAsset, true);
-  eastward.registerAssetLoader("stylesheet", StylesheetAsset, true);
-
-  eastward.registerAssetLoader("text", TextAsset, true);
-
-  eastward.registerAssetLoader("texture", TextureAsset, true);
-  eastward.registerAssetLoader("lut_texture", LutTextureAsset, true);
-  eastward.registerAssetLoader("multi_texture", MultiTextureAsset, true);
-
-  eastward.registerAssetLoader("ui_style", UIStyleAsset, true);
+  for (const type of ASSET_TYPES) {
+    register(eastward, type as AssetType);
+  }
 }
