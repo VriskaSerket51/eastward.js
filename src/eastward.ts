@@ -74,15 +74,18 @@ export class Eastward {
     }
 
     const dlcPath = path.join(root, "content_dlc");
-    const files = await readdir(dlcPath);
-    for (const file of files) {
-      if (file.endsWith(".g")) {
-        const id = path.basename(file);
-        const archive = this.archives[id] ?? new GArchive({ verbose });
-        await archive.load(file);
+    if (await exists(dlcPath)) {
+      const files = await readdir(dlcPath);
+      for (const file of files) {
+        if (file.endsWith(".g")) {
+          const id = path.parse(file).name;
+          const archive = this.archives[id] ?? new GArchive({ verbose });
+          await archive.load(path.join(dlcPath, file));
+          this.archives[id] = archive;
 
-        if (verbose >= LOG_LEVEL.INFO) {
-          console.info(`DLC: ${file} loaded`);
+          if (verbose >= LOG_LEVEL.INFO) {
+            console.info(`DLC: ${file} loaded`);
+          }
         }
       }
     }
