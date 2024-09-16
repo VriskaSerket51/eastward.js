@@ -244,3 +244,23 @@ export class MultiTextureAsset extends Asset {
     writeFileSync(filePath, this.data);
   }
 }
+
+export class TexturePackAsset extends Asset {
+  constructor(eastward: Eastward, node: AssetNode) {
+    super(eastward, node);
+  }
+
+  get type(): string {
+    return Asset.Type.None;
+  }
+
+  async toString(): Promise<string | null> {
+    return null;
+  }
+
+  async load() {}
+
+  async saveFile(filePath: string) {}
+
+  saveFileSync(filePath: string) {}
+}

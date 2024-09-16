@@ -2,8 +2,9 @@ import { AnimatorDataAsset } from "@/asset/animator-data";
 import { AssetMapAsset } from "@/asset/asset-map";
 import { CodeTilesetAsset } from "@/asset/code-tileset";
 import { DataCsvAsset, DataJsonAsset, DataXlsAsset } from "@/asset/data";
-import { Deck2DAsset } from "@/asset/deck-2d";
+import { Deck2DAsset, DeckPackAsset } from "@/asset/deck-2d";
 import { EffectAsset } from "@/asset/effect";
+import { FileAsset } from "@/asset/file";
 import { BMFontAsset, TTFFontAsset } from "@/asset/font";
 import { GLSLAsset } from "@/asset/glsl";
 import { LocalePackAsset } from "@/asset/locale";
@@ -11,6 +12,7 @@ import { LuaAsset } from "@/asset/lua";
 import { MSpriteAsset } from "@/asset/m-sprite";
 import { MaterialAsset } from "@/asset/material";
 import { MeshAsset } from "@/asset/mesh";
+import { MovieAsset } from "@/asset/movie";
 import { PhysicsBodyDefAsset, PhysicsMaterialAsset } from "@/asset/physics";
 import { PrefabAsset } from "@/asset/prefab";
 import { RenderTargetAsset } from "@/asset/render-target";
@@ -33,6 +35,7 @@ import {
   LutTextureAsset,
   MultiTextureAsset,
   TextureAsset,
+  TexturePackAsset,
 } from "@/asset/texture";
 import { UIStyleAsset } from "@/asset/ui-style";
 import { Eastward } from "@/eastward";
@@ -45,12 +48,16 @@ const typeMap = {
   data_csv: DataCsvAsset,
   data_xls: DataXlsAsset,
   deck2d: Deck2DAsset,
+  deck_pack: DeckPackAsset,
+  deck_pack_raw: DeckPackAsset,
   effect: EffectAsset,
+  file: FileAsset,
   font_bmfont: BMFontAsset,
   font_ttf: TTFFontAsset,
   glsl: GLSLAsset,
   locale_pack: LocalePackAsset,
   lua: LuaAsset,
+  movie: MovieAsset,
   msprite: MSpriteAsset,
   material: MaterialAsset,
   mesh: MeshAsset,
@@ -71,6 +78,7 @@ const typeMap = {
   stylesheet: StylesheetAsset,
   text: TextAsset,
   texture: TextureAsset,
+  texture_pack: TexturePackAsset,
   lut_texture: LutTextureAsset,
   multi_texture: MultiTextureAsset,
   ui_style: UIStyleAsset,
