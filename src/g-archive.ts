@@ -158,16 +158,23 @@ export class GArchive {
     const { verbose } = this.config;
 
     for (const fileName of this.getFileNames()) {
-      const data = await this.getFileData(fileName);
-      if (data) {
-        const filePath = path.join(dst, fileName);
-        const dirName = path.dirname(filePath);
-        if (!(await exists(dirName))) {
-          await mkdir(dirName, { recursive: true });
+      try {
+        const data = await this.getFileData(fileName);
+        if (data) {
+          const filePath = path.join(dst, fileName);
+          const dirName = path.dirname(filePath);
+          if (!(await exists(dirName))) {
+            await mkdir(dirName, { recursive: true });
+          }
+          await writeFile(filePath, data);
+          if (verbose >= LOG_LEVEL.INFO) {
+            console.info(fileName);
+          }
         }
-        await writeFile(filePath, data);
-        if (verbose >= LOG_LEVEL.INFO) {
-          console.info(fileName);
+      } catch (err) {
+        const e = err as Error;
+        if (verbose >= LOG_LEVEL.ERROR) {
+          console.error(`Error at ${fileName}: ${e.message}`);
         }
       }
     }
