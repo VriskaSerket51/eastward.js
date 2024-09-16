@@ -5,6 +5,7 @@ import { deserialize } from "@/util/serializer";
 import { exists, readDirectory, readFile } from "@/util/filesystem";
 import path from "path";
 import { LuaObject } from "@/type";
+import { readdir } from "fs/promises";
 
 type AssetIndex = {
   type: string;
@@ -32,6 +33,7 @@ export const LOG_LEVEL = {
 
 export type Config = {
   root: string;
+  dlc?: string[];
   verbose?: number;
 };
 
@@ -43,8 +45,8 @@ export class Eastward {
   textureLibrary: any = {};
 
   constructor(config: Config) {
-    const { root, verbose = LOG_LEVEL.ERROR } = config;
-    this.config = { root, verbose };
+    const { root, dlc = [], verbose = LOG_LEVEL.ERROR } = config;
+    this.config = { root, dlc, verbose };
   }
 
   async init() {
@@ -56,7 +58,7 @@ export class Eastward {
       mode: string;
     };
 
-    const { root, verbose } = this.config;
+    const { root, dlc, verbose } = this.config;
 
     const filePath = path.join(root, "content", "packages.json");
     const json = JSON.parse(new TextDecoder().decode(await readFile(filePath)));
@@ -68,6 +70,21 @@ export class Eastward {
 
         if (verbose >= LOG_LEVEL.INFO) {
           console.info(`${id}.g loaded`);
+        }
+      }
+    }
+
+    for (const dlcRoot of dlc) {
+      const files = await readdir(dlcRoot);
+      for (const file of files) {
+        if (file.endsWith(".g")) {
+          const id = path.basename(file);
+          const archive = this.archives[id] ?? new GArchive({ verbose });
+          await archive.load(file);
+
+          if (verbose >= LOG_LEVEL.INFO) {
+            console.info(`DLC: ${file} loaded`);
+          }
         }
       }
     }
