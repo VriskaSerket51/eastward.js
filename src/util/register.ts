@@ -1,6 +1,6 @@
 import { AnimatorDataAsset } from "@/asset/animator-data";
 import { AssetMapAsset } from "@/asset/asset-map";
-import { CodeTilesetAsset } from "@/asset/code-tileset";
+import { CodeTilesetAsset, NamedTilesetPackAsset } from "@/asset/tileset";
 import { DataCsvAsset, DataJsonAsset, DataXlsAsset } from "@/asset/data";
 import { Deck2DAsset, DeckPackAsset } from "@/asset/deck-2d";
 import { EffectAsset } from "@/asset/effect";
@@ -36,6 +36,7 @@ import {
   MultiTextureAsset,
   TextureAsset,
   TexturePackAsset,
+  TextureProcessorAsset,
 } from "@/asset/texture";
 import { UIStyleAsset } from "@/asset/ui-style";
 import { Eastward } from "@/eastward";
@@ -61,6 +62,7 @@ const typeMap = {
   msprite: MSpriteAsset,
   material: MaterialAsset,
   mesh: MeshAsset,
+  named_tileset_pack: NamedTilesetPackAsset,
   physics_body_def: PhysicsBodyDefAsset,
   physics_material: PhysicsMaterialAsset,
   prefab: PrefabAsset,
@@ -79,6 +81,7 @@ const typeMap = {
   text: TextAsset,
   texture: TextureAsset,
   texture_pack: TexturePackAsset,
+  texture_processor: TextureProcessorAsset,
   lut_texture: LutTextureAsset,
   multi_texture: MultiTextureAsset,
   ui_style: UIStyleAsset,

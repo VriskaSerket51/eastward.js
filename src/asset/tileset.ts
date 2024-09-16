@@ -38,3 +38,41 @@ export class CodeTilesetAsset extends Asset {
     writeFileSync(filePath, this.data);
   }
 }
+
+export class NamedTilesetPackAsset extends Asset {
+  def: string | null = null;
+  atlas: string | null = null;
+
+  constructor(eastward: Eastward, node: AssetNode) {
+    super(eastward, node);
+  }
+
+  get type(): string {
+    return Asset.Type.None;
+  }
+
+  async toString(): Promise<string | null> {
+    return null;
+  }
+
+  async load() {
+    // TODO
+    // this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
+  }
+
+  async saveFile(filePath: string) {
+    if (!this.def) {
+      return;
+    }
+    super.beforeSave(filePath);
+    await fs.writeFile(filePath, this.def);
+  }
+
+  saveFileSync(filePath: string) {
+    if (!this.def) {
+      return;
+    }
+    super.beforeSave(filePath);
+    writeFileSync(filePath, this.def);
+  }
+}
