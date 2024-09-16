@@ -114,21 +114,7 @@ async function main() {
             throw new Error("Required option: --out");
           }
 
-          async function readAll(dir: string, files: string[]) {
-            for (const file of await readdir(dir)) {
-              const abs = path.join(dir, file);
-              const fileStat = await stat(abs);
-              if (fileStat.isDirectory()) {
-                await readAll(abs, files);
-              } else {
-                const fileName = path.relative(root!, abs).replace(/\\/g, "/");
-                files.push(fileName);
-              }
-            }
-          }
-
-          const files: string[] = [];
-          await readAll(root, files);
+          const files = await readdir(root, { recursive: true });
 
           const archive = new GArchive({ verbose });
           for (const file of files) {
