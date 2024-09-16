@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
-import { exists } from "@/util/filesystem";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import { mkdir, readdir, readFile, stat, writeFile } from "fs/promises";
+import { readdir, readFile, stat } from "fs/promises";
 import path from "path";
 
 async function main() {
@@ -38,7 +37,9 @@ async function main() {
         "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
       );
       console.log("\t\t--root\t\tgame root directory");
-      console.log("\t\t-T, --type\tasset type; --help type to get list");
+      console.log(
+        "\t\t-T, --type\tasset type; eastward --help type to get list"
+      );
       console.log("\t\t--out\t\toutput directory");
 
       console.log("\tunzip\t\tExtract data from .g files to output directory.");
@@ -116,8 +117,8 @@ async function main() {
           async function readAll(dir: string, files: string[]) {
             for (const file of await readdir(dir)) {
               const abs = path.join(dir, file);
-              const dirStat = await stat(abs);
-              if (dirStat.isDirectory()) {
+              const fileStat = await stat(abs);
+              if (fileStat.isDirectory()) {
                 await readAll(abs, files);
               } else {
                 const fileName = path.relative(root!, abs).replace(/\\/g, "/");
@@ -131,10 +132,17 @@ async function main() {
 
           const archive = new GArchive({ verbose });
           for (const file of files) {
-            const data = await readFile(path.join(root, file));
-            await archive.setFileData(file, data);
-            if (verbose >= LOG_LEVEL.INFO) {
-              console.info(file);
+            try {
+              const data = await readFile(path.join(root, file));
+              await archive.setFileData(file, data);
+              if (verbose >= LOG_LEVEL.INFO) {
+                console.info(file);
+              }
+            } catch (err) {
+              const e = err as Error;
+              if (verbose >= LOG_LEVEL.ERROR) {
+                console.error(`Error at ${file}: ${e.message}`);
+              }
             }
           }
 
