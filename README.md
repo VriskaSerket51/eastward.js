@@ -21,9 +21,11 @@ npm install eastward.js
 `npx eastward --help` for help.
 
 If you installed eastward.js globally,
+
 ```sh
 npm install -g eastward.js
 ```
+
 you can just use `eastward --help`
 
 ```
@@ -71,6 +73,24 @@ eastward.registerAssetLoader("locale_pack", LocalePackAsset);
 await eastward.extractTo("./extract_locale_pack");
 
 console.log("extracting locale_pack finished");
+```
+
+Example for extract certain assets from the root game folder.
+
+```javascript
+import { Eastward, TextureAsset, registerAll } from "eastward.js";
+
+const root = "C:/SteamLibrary/steamapps/common/Eastward";
+const eastward = new Eastward({ root });
+await eastward.init();
+registerAll(eastward); // register all asset types
+
+const texture = await eastward.loadAsset<TextureAsset>("texture/ui/icon/miniSam.png");
+if (texture) {
+  await texture.saveFile("./miniSam.png")
+}
+
+console.log("extracting finished");
 ```
 
 Example for reading asset from archive.
