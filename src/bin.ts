@@ -27,7 +27,7 @@ async function main() {
 
     if (args["--help"]) {
       if (others.shift() == "type") {
-        ASSET_TYPES.forEach(console.log);
+        ASSET_TYPES.forEach((type) => console.log(type));
         process.exit();
       }
 
