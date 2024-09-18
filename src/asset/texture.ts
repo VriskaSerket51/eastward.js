@@ -7,6 +7,7 @@ import fs from "fs/promises";
 
 export class TextureAsset extends Asset {
   hmg: HMG | null = null;
+  info: any = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -22,11 +23,11 @@ export class TextureAsset extends Asset {
 
   async load() {
     let atlasInfo = { x: 0, y: 0, w: 0, h: 0 };
-    const texture = this.eastward.findTexture(this.node.path);
-    if (!texture) {
-      throw new Error(this.node.path);
+    this.info = this.eastward.findTexture(this.node.path);
+    if (!this.info) {
+      throw new Error(`texture not found: ${this.node.path}`);
     }
-    const textureGroup = texture.parent;
+    const textureGroup = this.info.parent;
     if (textureGroup.atlasMode) {
       if (!textureGroup.atlasTexturesCache) {
         const base = textureGroup.atlasCachePath;
@@ -40,11 +41,11 @@ export class TextureAsset extends Asset {
         }
         textureGroup.atlasTexturesCache = atlasTexturesCache;
       }
-      const atlasId = texture.atlasId;
-      atlasInfo.x = Number(texture.x);
-      atlasInfo.y = Number(texture.y);
-      atlasInfo.w = Number(texture.w);
-      atlasInfo.h = Number(texture.h);
+      const atlasId = this.info.atlasId;
+      atlasInfo.x = Number(this.info.x);
+      atlasInfo.y = Number(this.info.y);
+      atlasInfo.w = Number(this.info.w);
+      atlasInfo.h = Number(this.info.h);
       this.hmg = textureGroup.atlasTexturesCache[atlasId - 1];
     } else {
       const pixmap = await this.eastward.loadFile(
@@ -79,6 +80,37 @@ export class TextureAsset extends Asset {
         data,
       };
     }
+  }
+
+  getUV() {
+    const { u0, v0, u1, v1 } = this.info;
+
+    return {
+      u0: Number(u0),
+      v0: Number(v0),
+      u1: Number(u1),
+      v1: Number(v1),
+    };
+  }
+
+  getSize() {
+    const { x, y, w, h } = this.info;
+
+    return {
+      x: Number(x),
+      y: Number(y),
+      w: Number(w),
+      h: Number(h),
+    };
+  }
+
+  getOriginalSize() {
+    const { ow, oh } = this.info;
+
+    return {
+      ow: Number(ow),
+      oh: Number(oh),
+    };
   }
 
   async saveFile(filePath: string) {
