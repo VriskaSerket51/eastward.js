@@ -3,7 +3,7 @@ import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import { readdir, readFile, stat } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 import path from "path";
 
 async function main() {

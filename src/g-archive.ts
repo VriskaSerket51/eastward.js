@@ -20,12 +20,29 @@ type Config = {
 export class GArchive {
   config;
   assets: { [key: string]: File } = {};
+  filePaths: string[] = [];
+  loaded = false;
 
   constructor(config: Config) {
     const { verbose = LOG_LEVEL.ERROR } = config;
     this.config = {
       verbose,
     };
+  }
+
+  get isLoaded() {
+    return this.loaded;
+  }
+
+  lazyLoad(filePath: string) {
+    this.filePaths.push(filePath);
+  }
+
+  async doLazyLoad() {
+    for (const filePath of this.filePaths) {
+      await this.load(filePath);
+    }
+    this.loaded = true;
   }
 
   async load(filePath: string) {
@@ -53,21 +70,36 @@ export class GArchive {
     }
   }
 
-  getFileNames() {
+  async getFileNames() {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     return Object.keys(this.assets);
   }
 
   async getDirectoryData(dirName: string) {
-    return this.getFileNames().filter((fileName) =>
-      fileName.startsWith(dirName)
-    );
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
+    const fileNames = await this.getFileNames();
+    return fileNames.filter((fileName) => fileName.startsWith(dirName));
   }
 
-  checkFileData(name: string) {
+  async checkFileData(name: string) {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     return this.assets[name] != null;
   }
 
   async getFileData(name: string) {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     const assets = this.assets[name];
     if (!assets) {
       return null;
@@ -81,6 +113,10 @@ export class GArchive {
   }
 
   async setFileData(name: string, data: Uint8Array) {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     const assets = this.assets[name];
     if (!assets) {
       this.assets[name] = {
@@ -97,6 +133,10 @@ export class GArchive {
   }
 
   async saveFile(filePath: string) {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     const write = (
       stream: WriteStream,
       chunk: string | Buffer | Uint8Array
@@ -155,9 +195,13 @@ export class GArchive {
   }
 
   async extracTo(dst: string) {
+    if (!this.isLoaded) {
+      await this.doLazyLoad();
+    }
+
     const { verbose } = this.config;
 
-    for (const fileName of this.getFileNames()) {
+    for (const fileName of await this.getFileNames()) {
       try {
         const data = await this.getFileData(fileName);
         if (data) {

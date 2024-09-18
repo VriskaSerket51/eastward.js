@@ -65,8 +65,9 @@ export class Eastward {
     for (const [_, { mode, id }] of Object.entries<Package>(json.packages)) {
       if (mode == "packed" && id != "_system") {
         const filePath = path.join(root, "content", "game", `${id}.g`);
-        this.archives[id] = new GArchive({ verbose });
-        await this.archives[id].load(filePath);
+        const archive = new GArchive({ verbose });
+        archive.lazyLoad(filePath);
+        this.archives[id] = archive;
 
         if (verbose >= LOG_LEVEL.INFO) {
           console.info(`${id}.g loaded`);
@@ -81,7 +82,7 @@ export class Eastward {
         if (file.endsWith(".g")) {
           const id = path.parse(file).name;
           const archive = this.archives[id] ?? new GArchive({ verbose });
-          await archive.load(path.join(dlcPath, file));
+          archive.lazyLoad(path.join(dlcPath, file));
           this.archives[id] = archive;
 
           if (verbose >= LOG_LEVEL.INFO) {
@@ -215,7 +216,7 @@ export class Eastward {
       return false;
     }
     const virtualPath = rest.join("/");
-    return this.archives[archive].checkFileData(virtualPath);
+    return await this.archives[archive].checkFileData(virtualPath);
   }
 
   async loadFile(filePath: string) {
@@ -317,13 +318,17 @@ export class Eastward {
 
   getAssetNodesWith(...types: AssetType[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && types.includes(node.type as AssetType)
+      (node) =>
+        typeof node.filePath == "string" &&
+        types.includes(node.type as AssetType)
     );
   }
 
   getAssetNodesExcept(...types: AssetType[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && !types.includes(node.type as AssetType)
+      (node) =>
+        typeof node.filePath == "string" &&
+        !types.includes(node.type as AssetType)
     );
   }
 
