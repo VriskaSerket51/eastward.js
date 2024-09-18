@@ -35,6 +35,7 @@ export class Asset {
   static Type = {
     Text: "text",
     JSON: "json",
+    CSV: "csv",
     GLSL: "glsl",
     Lua: "lua",
     Image: "image",
