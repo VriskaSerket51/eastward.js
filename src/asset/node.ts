@@ -59,5 +59,4 @@ export class Asset {
     }
   }
   async saveFile(filePath: string) {}
-  saveFileSync(filePath: string) {}
 }
