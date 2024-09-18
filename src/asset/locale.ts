@@ -53,6 +53,21 @@ export class LocalePackAsset extends Asset {
     }
   }
 
+  translate(path: string, key: string, lang: string) {
+    if (!this.config || !this.data || !this.langs.includes(lang)) {
+      return null;
+    }
+
+    const item = this.config.items.find(
+      ({ path: itemPath }) => itemPath == path
+    );
+    if (!item) {
+      return null;
+    }
+
+    return String(this.data[lang][item.name][key]);
+  }
+
   async saveFile(filePath: string) {
     if (!this.config || !this.data) {
       return;
