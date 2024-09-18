@@ -1,12 +1,18 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
-import { writeFileSync } from "fs";
 import fs from "fs/promises";
+import path from "path";
 import { Lua } from "wasmoon-lua5.1";
+import PO from "pofile";
+
+type LocaleConfig = {
+  guid: string;
+  items: { name: string; path: string }[];
+};
 
 export class LocalePackAsset extends Asset {
   langs: string[] = [];
-  config: any | null = null;
+  config: LocaleConfig | null = null;
   data: { [key: string]: any } = {};
 
   constructor(eastward: Eastward, node: AssetNode) {
@@ -48,16 +54,37 @@ export class LocalePackAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    super.beforeSave(filePath);
-    const config = this.config;
-    const data = this.data;
-    await fs.writeFile(filePath, JSON.stringify({ config, data }));
-  }
+    if (!this.config || !this.data) {
+      return;
+    }
 
-  saveFileSync(filePath: string) {
-    super.beforeSave(filePath);
+    this.langs.forEach((lang) => {
+      super.beforeSave(path.join(filePath, "locales", lang, "template"));
+    });
+
     const config = this.config;
     const data = this.data;
-    writeFileSync(filePath, JSON.stringify({ config, data }));
+    await fs.writeFile(
+      path.join(filePath, "locale_pack.json"),
+      JSON.stringify(config, null, 2)
+    );
+
+    for (const [lang, i18n] of Object.entries<any>(data)) {
+      for (const [name, locale] of Object.entries<any>(i18n)) {
+        const po = new PO();
+
+        for (const [k, v] of Object.entries<string>(locale)) {
+          const item = new PO.Item();
+          item.msgid = k;
+          item.msgstr = [v];
+          po.items.push(item);
+        }
+
+        await fs.writeFile(
+          path.join(filePath, "locales", lang, `${name}.po`),
+          po.toString()
+        );
+      }
+    }
   }
 }
