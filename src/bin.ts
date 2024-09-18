@@ -76,7 +76,7 @@ async function main() {
           const eastward = new Eastward({ root, verbose });
           await eastward.init();
 
-          const types = args["--type"] || [];
+          const types = (args["--type"] || []) as AssetType[];
           if (types.length == 0) {
             registerAll(eastward);
           } else {

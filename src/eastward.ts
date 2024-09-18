@@ -6,6 +6,7 @@ import { exists, readDirectory, readFile } from "@/util/filesystem";
 import path from "path";
 import { LuaObject } from "@/type";
 import { readdir } from "fs/promises";
+import { AssetType } from "./util/register";
 
 type AssetIndex = {
   type: string;
@@ -308,25 +309,25 @@ export class Eastward {
     return node;
   }
 
-  getAssetNodes(type?: string) {
+  getAssetNodes(type?: AssetType) {
     return Object.values(this.nodes).filter(
       (node) => typeof node.filePath == "string" && (!type || node.type == type)
     );
   }
 
-  getAssetNodesWith(...types: string[]) {
+  getAssetNodesWith(...types: AssetType[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && types.includes(node.type)
+      (node) => typeof node.filePath == "string" && types.includes(node.type as AssetType)
     );
   }
 
-  getAssetNodesExcept(...types: string[]) {
+  getAssetNodesExcept(...types: AssetType[]) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && !types.includes(node.type)
+      (node) => typeof node.filePath == "string" && !types.includes(node.type as AssetType)
     );
   }
 
-  async extractTo(dst: string, ...types: string[]) {
+  async extractTo(dst: string, ...types: AssetType[]) {
     const { verbose } = this.config;
 
     const nodes =
