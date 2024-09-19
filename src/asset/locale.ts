@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { Lua } from "wasmoon-lua5.1";
 import PO from "pofile";
+import { localeToPO } from "@/util/i18n";
 
 type LocaleConfig = {
   guid: string;
@@ -53,19 +54,24 @@ export class LocalePackAsset extends Asset {
     }
   }
 
-  translate(path: string, key: string, lang: string) {
-    if (!this.config || !this.data || !this.langs.includes(lang)) {
+  findNameByPath(path: string) {
+    if (!this.config) {
       return null;
     }
 
     const item = this.config.items.find(
       ({ path: itemPath }) => itemPath == path
     );
-    if (!item) {
+
+    return item ? item.name : null;
+  }
+
+  getTranslation(name: string, lang: string) {
+    if (!this.data || !this.langs.includes(lang)) {
       return null;
     }
 
-    return String(this.data[lang][item.name][key]);
+    return this.data[lang][name];
   }
 
   async saveFile(filePath: string) {
@@ -84,20 +90,16 @@ export class LocalePackAsset extends Asset {
       JSON.stringify(config, null, 2)
     );
 
-    for (const [lang, i18n] of Object.entries<any>(data)) {
-      for (const [name, locale] of Object.entries<any>(i18n)) {
-        const po = new PO();
+    for (const lang in data) {
+      const i18n = data[lang];
+      for (const name in i18n) {
+        const locale = i18n[name];
 
-        for (const [k, v] of Object.entries<string>(locale)) {
-          const item = new PO.Item();
-          item.msgid = k;
-          item.msgstr = [v];
-          po.items.push(item);
-        }
+        const po = localeToPO(locale);
 
         await fs.writeFile(
           path.join(filePath, "locales", lang, `${name}.po`),
-          po.toString()
+          po
         );
       }
     }

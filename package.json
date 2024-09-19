@@ -49,6 +49,7 @@
     "lz4js": "^0.2.0",
     "pofile": "^1.1.4",
     "wasmoon-lua5.1": "^1.18.10",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
+    "xmlbuilder2": "^3.1.1"
   }
 }

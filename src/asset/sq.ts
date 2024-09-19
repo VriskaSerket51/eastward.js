@@ -3,6 +3,7 @@ import { Eastward } from "@/eastward";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 import { LocalePackAsset } from "./locale";
+import { decompileSQ } from "@/util/sq";
 
 export class SQScriptAsset extends Asset {
   raw: any;
@@ -34,166 +35,12 @@ export class SQScriptAsset extends Asset {
     this.root = createNode(data) as SQNodeRoot;
   }
 
-  decompileNode(node: any, indentLevel: number) {
-    const indent = "\t".repeat(indentLevel);
-    let output = "";
-
-    switch (node.type) {
-      case "label":
-        output += `${indent}!${node.id}\n`;
-        break;
-
-      case "context":
-        output += `${indent}@${node.names.join(",")}\n`;
-        break;
-
-      case "tag":
-        output += indent;
-        node.tags.forEach(([tagName, tagParam]: string | null[]) => {
-          output += `#${tagName}`;
-          if (tagParam) {
-            output += `(${tagParam})`;
-          }
-          output += " ";
-        });
-        output = output.trimEnd() + "\n";
-        break;
-
-      case "directive":
-        output += `${indent}$${node.name}`;
-        if (node.value !== undefined && node.value !== null) {
-          output += `:${node.value}`;
-        }
-        output += "\n";
-        break;
-
-      case "action":
-        if (node.lineCount > 1) {
-          output += `${indent}${node.sub ? "." : ""}${node.name}`;
-          if (node.args && node.args.length > 0) {
-            output += ` ${node.args[0]}`;
-          }
-          output += ":\n";
-          for (let i = 1; i < node.args.length; i++) {
-            output += `${indent}\t${node.args[i]}\n`;
-          }
-        } else {
-          output += `${indent}${node.sub ? "." : ""}${node.name}`;
-          if (node.args && node.args.length > 0) {
-            output += ` ${node.args.join(" ")}`;
-          }
-          output += "\n";
-        }
-        break;
-
-      default:
-        break;
-    }
-
-    if (node.inlineDirectives && node.inlineDirectives.length > 0) {
-      output = output.trimEnd();
-      output += " //";
-      node.inlineDirectives.forEach((inlineDirective: any) => {
-        output += `$${inlineDirective.name}`;
-        if (inlineDirective.value) {
-          output += `(${inlineDirective.value})`;
-        } else {
-          output += "()";
-        }
-        output += " ";
-      });
-      output = output.trimEnd() + "\n";
-    }
-
-    if (node.children && node.children.length > 0) {
-      node.children.forEach((child: any) => {
-        output += this.decompileNode(child, indentLevel + 1);
-      });
-    }
-
-    return output;
-  }
-
-  async _getData(locale?: string) {
-    if (locale) {
-      let localePack: LocalePackAsset | null = null;
-
-      const nodes = this.eastward.getAssetNodes("locale_pack");
-      for (const node of nodes) {
-        const pack = await this.eastward.loadAsset<LocalePackAsset>(node.path);
-        if (!pack || !pack.config) {
-          continue;
-        }
-        for (const item of pack.config.items) {
-          if (item.path == this.node.path) {
-            localePack = pack;
-            break;
-          }
-        }
-
-        if (localePack) {
-          break;
-        }
-      }
-
-      if (localePack) {
-        function helper(sq: SQScriptAsset, node: any, directives: string[]) {
-          if (node.type == "action") {
-            if (
-              node.name == "say" ||
-              node.name == "shout" ||
-              node.name == "emo"
-            ) {
-              const directive = directives.pop();
-              if (directive) {
-                directives.push(directive);
-                const result = localePack?.translate(
-                  sq.node.path,
-                  directive,
-                  locale!
-                );
-                if (result) {
-                  node.args = result.split("\n");
-                }
-              }
-            }
-          } else if (node.type == "directive") {
-            if (node.name == "id") {
-              directives.push(node.value);
-            }
-          }
-
-          if (node.children && node.children.length > 0) {
-            node.children.forEach((node: any) => {
-              helper(sq, node, directives);
-            });
-          }
-        }
-
-        helper(this, this.raw, []);
-      }
-    }
-
-    return this.raw;
-  }
-
-  async decompile(locale?: string) {
-    const data = await this._getData(locale);
-
-    let script = "";
-
-    if (data.type === "root" && data.children) {
-      data.children.forEach((child: any) => {
-        script += this.decompileNode(child, 0);
-      });
-    }
-
-    return script;
-  }
-
   async saveFile(filePath: string) {
+    if (!this.raw) {
+      return;
+    }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, await this.decompile());
+    await fs.writeFile(filePath, decompileSQ(this.raw));
   }
 
   async saveBuildFile(filePath: string) {
