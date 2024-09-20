@@ -1,7 +1,7 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
 import { uint8ArrayToBase64 } from "@/util/base64";
-import { decodeHMG, HMG, hmg2png } from "@/util/hmg";
+import { cropHMG, decodeHMG, HMG, hmg2png } from "@/util/hmg";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
@@ -59,26 +59,7 @@ export class TextureAsset extends Asset {
       return;
     }
     if (atlasInfo.w != 0 && atlasInfo.h != 0) {
-      const { x, y, w: width, h: height } = atlasInfo;
-      const data = new Uint8Array(width * height * 4);
-
-      for (let row = 0; row < height; row++) {
-        for (let col = 0; col < width; col++) {
-          const sourceIndex = ((y + row) * this.hmg.width + (x + col)) * 4;
-          const destIndex = (row * width + col) * 4;
-
-          data[destIndex] = this.hmg.data[sourceIndex]; // R
-          data[destIndex + 1] = this.hmg.data[sourceIndex + 1]; // G
-          data[destIndex + 2] = this.hmg.data[sourceIndex + 2]; // B
-          data[destIndex + 3] = this.hmg.data[sourceIndex + 3]; // A
-        }
-      }
-
-      this.hmg = {
-        width,
-        height,
-        data,
-      };
+      this.hmg = cropHMG(this.hmg, atlasInfo);
     }
   }
 

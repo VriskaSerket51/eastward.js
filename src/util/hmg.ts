@@ -8,6 +8,36 @@ export type HMG = {
   data: Uint8Array;
 };
 
+type Rect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+export function cropHMG(hmg: HMG, crop: Rect) {
+  const { x, y, w: width, h: height } = crop;
+  const data = new Uint8Array(width * height * 4);
+
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const sourceIndex = ((y + row) * hmg.width + (x + col)) * 4;
+      const destIndex = (row * width + col) * 4;
+
+      data[destIndex] = hmg.data[sourceIndex]; // R
+      data[destIndex + 1] = hmg.data[sourceIndex + 1]; // G
+      data[destIndex + 2] = hmg.data[sourceIndex + 2]; // B
+      data[destIndex + 3] = hmg.data[sourceIndex + 3]; // A
+    }
+  }
+
+  return {
+    width,
+    height,
+    data,
+  } as HMG;
+}
+
 export async function hmg2png(hmg: HMG) {
   const { width, height, data } = hmg;
   const encoded = await encodePng({ data, width, height });
