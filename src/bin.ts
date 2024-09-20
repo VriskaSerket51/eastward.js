@@ -140,7 +140,7 @@ async function main() {
             } catch (err) {
               const e = err as Error;
               if (verbose >= LOG_LEVEL.ERROR) {
-                console.error(`Error at ${file}: ${e.message}`);
+                console.error(`Error at ${path.join(root, file)}: ${e.message}`);
               }
             }
           }
@@ -172,7 +172,7 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(`Error at ${file}: ${e.message}`);
+                  console.error(`Error at ${path.join(inPath, file)}: ${e.message}`);
                 }
               }
             }
@@ -207,7 +207,7 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(`Error at ${file}: ${e.message}`);
+                  console.error(`Error at ${path.join(inPath, file)}: ${e.message}`);
                 }
               }
             }
