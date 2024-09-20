@@ -3,8 +3,9 @@ import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import { readdir, readFile } from "fs/promises";
+import { readdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { decodeHMG, encodeHMG, hmg2png, png2hmg } from "./util/hmg";
 
 async function main() {
   console.log(`eastward.js by IREVES`);
@@ -17,8 +18,10 @@ async function main() {
       "--help": Boolean,
       "--verbose": arg.COUNT,
       "--root": String,
+      "--in": String,
       "--out": String,
       "--type": [String],
+      "-r": Boolean,
       "-v": "--verbose",
       "-T": "--type",
     });
@@ -51,6 +54,16 @@ async function main() {
       );
       console.log("\t\t--root\t\troot directory");
       console.log("\t\t--out\t\toutput .g file");
+
+      console.log("\thmg2png\t\tRead hmg files and convert to png files.");
+      console.log("\t\t-r\t\tRead recursive in directory");
+      console.log("\t\t--in\t\tInput directory or file");
+      console.log("\t\t--out\t\tOutput directory or file");
+
+      console.log("\tpng2hmg\t\tRead png files and convert to hmg files.");
+      console.log("\t\t-r\t\tRead recursive in directory");
+      console.log("\t\t--in\t\tInput directory or file");
+      console.log("\t\t--out\t\tOutput directory or file");
 
       process.exit();
     }
@@ -133,6 +146,76 @@ async function main() {
           }
 
           await archive.saveFile(out);
+        }
+        break;
+
+      case "hmg2png":
+        {
+          const recursive = args["-r"];
+          const inPath = args["--in"];
+          if (!inPath) {
+            throw new Error("Required option: --in");
+          }
+          const out = args["--out"];
+          if (!out) {
+            throw new Error("Required option: --out");
+          }
+
+          if (recursive) {
+            const files = await readdir(inPath, { recursive: true });
+
+            for (const file of files) {
+              try {
+                const data = await readFile(path.join(inPath, file));
+                const png = await hmg2png(decodeHMG(data));
+                await writeFile(path.join(out, file), png);
+              } catch (err) {
+                const e = err as Error;
+                if (verbose >= LOG_LEVEL.ERROR) {
+                  console.error(`Error at ${file}: ${e.message}`);
+                }
+              }
+            }
+          } else {
+            const data = await readFile(inPath);
+            const png = await hmg2png(decodeHMG(data));
+            await writeFile(out, png);
+          }
+        }
+        break;
+
+      case "png2hmg":
+        {
+          const recursive = args["-r"];
+          const inPath = args["--in"];
+          if (!inPath) {
+            throw new Error("Required option: --in");
+          }
+          const out = args["--out"];
+          if (!out) {
+            throw new Error("Required option: --out");
+          }
+
+          if (recursive) {
+            const files = await readdir(inPath, { recursive: true });
+
+            for (const file of files) {
+              try {
+                const data = await readFile(path.join(inPath, file));
+                const png = encodeHMG(await png2hmg(data));
+                await writeFile(path.join(out, file), png);
+              } catch (err) {
+                const e = err as Error;
+                if (verbose >= LOG_LEVEL.ERROR) {
+                  console.error(`Error at ${file}: ${e.message}`);
+                }
+              }
+            }
+          } else {
+            const data = await readFile(inPath);
+            const png = encodeHMG(await png2hmg(data));
+            await writeFile(out, png);
+          }
         }
         break;
 
