@@ -3,9 +3,9 @@ import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import { readdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { decodeHMG, encodeHMG, hmg2png, png2hmg } from "./util/hmg";
+import { readFile, readFiles, writeFile } from "./util/filesystem";
 
 async function main() {
   console.log(`eastward.js by IREVES`);
@@ -127,7 +127,7 @@ async function main() {
             throw new Error("Required option: --out");
           }
 
-          const files = await readdir(root, { recursive: true });
+          const files = await readFiles(root);
 
           const archive = new GArchive({ verbose });
           for (const file of files) {
@@ -140,7 +140,9 @@ async function main() {
             } catch (err) {
               const e = err as Error;
               if (verbose >= LOG_LEVEL.ERROR) {
-                console.error(`Error at ${path.join(root, file)}: ${e.message}`);
+                console.error(
+                  `Error at ${path.join(root, file)}: ${e.message}`
+                );
               }
             }
           }
@@ -162,7 +164,7 @@ async function main() {
           }
 
           if (recursive) {
-            const files = await readdir(inPath, { recursive: true });
+            const files = await readFiles(inPath);
 
             for (const file of files) {
               try {
@@ -172,7 +174,9 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(`Error at ${path.join(inPath, file)}: ${e.message}`);
+                  console.error(
+                    `Error at ${path.join(inPath, file)}: ${e.message}`
+                  );
                 }
               }
             }
@@ -197,7 +201,7 @@ async function main() {
           }
 
           if (recursive) {
-            const files = await readdir(inPath, { recursive: true });
+            const files = await readFiles(inPath);
 
             for (const file of files) {
               try {
@@ -207,7 +211,9 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(`Error at ${path.join(inPath, file)}: ${e.message}`);
+                  console.error(
+                    `Error at ${path.join(inPath, file)}: ${e.message}`
+                  );
                 }
               }
             }
