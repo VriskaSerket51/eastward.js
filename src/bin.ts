@@ -7,6 +7,39 @@ import path from "path";
 import { decodeHMG, encodeHMG, hmg2png, png2hmg } from "./util/hmg";
 import { readFile, readFiles, writeFile } from "./util/filesystem";
 
+function help() {
+  console.log("Usage: eastward [MODE] [OPTION]... [FILE]...");
+  console.log("Mode and Option:");
+  console.log(
+    "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
+  );
+  console.log("\t\t--root\t\tgame root directory");
+  console.log("\t\t-T, --type\tasset type; eastward --help type to get list");
+  console.log("\t\t--out\t\toutput directory");
+
+  console.log("\tunzip\t\tExtract data from .g files to output directory.");
+  console.log("\t\t--out\t\toutput directory");
+  console.log("\t\t[FILE]\t\t.g files");
+
+  console.log(
+    "\tzip\t\tArchive all data from root directory to output .g file."
+  );
+  console.log("\t\t--root\t\troot directory");
+  console.log("\t\t--out\t\toutput .g file");
+
+  console.log("\thmg2png\t\tRead hmg files and convert to png files.");
+  console.log("\t\t-r\t\tRead recursive in directory");
+  console.log("\t\t--in\t\tInput directory or file");
+  console.log("\t\t--out\t\tOutput directory or file");
+
+  console.log("\tpng2hmg\t\tRead png files and convert to hmg files.");
+  console.log("\t\t-r\t\tRead recursive in directory");
+  console.log("\t\t--in\t\tInput directory or file");
+  console.log("\t\t--out\t\tOutput directory or file");
+
+  process.exit();
+}
+
 async function main() {
   console.log(`eastward.js by IREVES`);
   console.log("https://github.com/VriskaSerket51/eastward.js");
@@ -34,38 +67,7 @@ async function main() {
         process.exit();
       }
 
-      console.log("Usage: eastward [MODE] [OPTION]... [FILE]...");
-      console.log("Mode and Option:");
-      console.log(
-        "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
-      );
-      console.log("\t\t--root\t\tgame root directory");
-      console.log(
-        "\t\t-T, --type\tasset type; eastward --help type to get list"
-      );
-      console.log("\t\t--out\t\toutput directory");
-
-      console.log("\tunzip\t\tExtract data from .g files to output directory.");
-      console.log("\t\t--out\t\toutput directory");
-      console.log("\t\t[FILE]\t\t.g files");
-
-      console.log(
-        "\tzip\t\tArchive all data from root directory to output .g file."
-      );
-      console.log("\t\t--root\t\troot directory");
-      console.log("\t\t--out\t\toutput .g file");
-
-      console.log("\thmg2png\t\tRead hmg files and convert to png files.");
-      console.log("\t\t-r\t\tRead recursive in directory");
-      console.log("\t\t--in\t\tInput directory or file");
-      console.log("\t\t--out\t\tOutput directory or file");
-
-      console.log("\tpng2hmg\t\tRead png files and convert to hmg files.");
-      console.log("\t\t-r\t\tRead recursive in directory");
-      console.log("\t\t--in\t\tInput directory or file");
-      console.log("\t\t--out\t\tOutput directory or file");
-
-      process.exit();
+      help();
     }
 
     const mode = others.shift();
@@ -140,9 +142,7 @@ async function main() {
             } catch (err) {
               const e = err as Error;
               if (verbose >= LOG_LEVEL.ERROR) {
-                console.error(
-                  `Error at ${file}: ${e.message}`
-                );
+                console.error(`Error at ${file}: ${e.message}`);
               }
             }
           }
@@ -174,9 +174,7 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(
-                    `Error at ${file}: ${e.message}`
-                  );
+                  console.error(`Error at ${file}: ${e.message}`);
                 }
               }
             }
@@ -211,9 +209,7 @@ async function main() {
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
-                  console.error(
-                    `Error at ${file}: ${e.message}`
-                  );
+                  console.error(`Error at ${file}: ${e.message}`);
                 }
               }
             }
@@ -226,7 +222,8 @@ async function main() {
         break;
 
       default:
-        throw new Error(`Unknown mode: ${mode}\n try eastward --help`);
+        console.warn(`Unknown mode: ${mode}`);
+        help();
     }
   } catch (err) {
     const e = err as Error;
