@@ -132,7 +132,7 @@ async function main() {
           const archive = new GArchive({ verbose });
           for (const file of files) {
             try {
-              const data = await readFile(path.join(root, file));
+              const data = await readFile(file);
               await archive.setFileData(file, data);
               if (verbose >= LOG_LEVEL.INFO) {
                 console.info(file);
@@ -141,7 +141,7 @@ async function main() {
               const e = err as Error;
               if (verbose >= LOG_LEVEL.ERROR) {
                 console.error(
-                  `Error at ${path.join(root, file)}: ${e.message}`
+                  `Error at ${file}: ${e.message}`
                 );
               }
             }
@@ -168,14 +168,14 @@ async function main() {
 
             for (const file of files) {
               try {
-                const data = await readFile(path.join(inPath, file));
+                const data = await readFile(file);
                 const png = await hmg2png(decodeHMG(data));
                 await writeFile(path.join(out, file), png);
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
                   console.error(
-                    `Error at ${path.join(inPath, file)}: ${e.message}`
+                    `Error at ${file}: ${e.message}`
                   );
                 }
               }
@@ -205,14 +205,14 @@ async function main() {
 
             for (const file of files) {
               try {
-                const data = await readFile(path.join(inPath, file));
+                const data = await readFile(file);
                 const png = encodeHMG(await png2hmg(data));
                 await writeFile(path.join(out, file), png);
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
                   console.error(
-                    `Error at ${path.join(inPath, file)}: ${e.message}`
+                    `Error at ${file}: ${e.message}`
                   );
                 }
               }
