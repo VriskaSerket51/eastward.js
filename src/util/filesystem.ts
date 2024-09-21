@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import path from "path";
 
 export async function exists(path: string) {
   try {
@@ -20,7 +21,7 @@ export async function readFile(filePath: string) {
 export async function readFiles(dirPath: string) {
   return (await fs.readdir(dirPath, { recursive: true, withFileTypes: true }))
     .filter((e) => e.isFile())
-    .map((e) => e.name);
+    .map((e) => path.join(e.path, e.name));
 }
 
 export async function writeFile(filePath: string, data: Uint8Array) {
