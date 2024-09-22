@@ -2,7 +2,13 @@ import { decode } from "@msgpack/msgpack";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
-import { exists, isDir, isFile, readDirectory, readFile } from "@/util/filesystem";
+import {
+  exists,
+  isDir,
+  isFile,
+  readDirectory,
+  readFile,
+} from "@/util/filesystem";
 import path from "path";
 import { LuaObject } from "@/type";
 import { readdir } from "fs/promises";
@@ -42,6 +48,7 @@ export class Eastward {
   archives: { [key: string]: GArchive } = {};
   nodes: { [key: string]: AssetNode } = {};
   assetLoaders: { [key: string]: AssetLoader } = {};
+  scriptLibrary: { [key: string]: string } = {};
   textureLibrary: any = {};
 
   constructor(config: Config) {
@@ -94,9 +101,11 @@ export class Eastward {
 
     const config = await this.loadJSONFile("config/game_config");
     const assetLibraryIndex = config.asset_library;
+    const scriptLibraryIndex = config.script_library;
     const textureLibraryIndex = config.texture_library;
 
     await this._loadAssetLibrary(assetLibraryIndex);
+    await this._loadScriptLibrary(scriptLibraryIndex);
     await this._loadTextureLibrary(textureLibraryIndex);
   }
 
@@ -156,6 +165,16 @@ export class Eastward {
         node.parentNode = pnode;
         pnode.children[name] = node;
       }
+    }
+  }
+
+  async _loadScriptLibrary(indexPath: string) {
+    const data = await this.loadJSONFile(indexPath);
+    const { source, export: exp } = data;
+    for (const mname in exp) {
+      const path = exp[mname];
+      const srcPath = source[mname];
+      this.scriptLibrary[srcPath] = path;
     }
   }
 
@@ -289,6 +308,10 @@ export class Eastward {
     await asset.load();
     node.cachedAsset = asset;
     return asset as T;
+  }
+
+  findScript(path: string) {
+    return this.scriptLibrary[path];
   }
 
   findTexture(path: string) {

@@ -1,42 +1,43 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
-import { writeFileSync } from "fs";
 import fs from "fs/promises";
+import { decompile } from "luajit-decompiler";
+import os from "os";
+import path from "path";
 
 export class LuaAsset extends Asset {
-  data: Uint8Array | null = null;
+  lua: string | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
   }
 
   get type(): string {
-    return Asset.Type.Binary;
+    return Asset.Type.Lua;
   }
 
   async toString(): Promise<string | null> {
-    return null;
+    return this.lua;
   }
 
   async load() {
-
-    // TODO
-    // this.src = await this.eastward.loadFile(this.node.objectFiles!.src);
+    const srcPath = this.eastward.findScript(this.node.path);
+    const data = await this.eastward.loadFile(srcPath);
+    if (!data) {
+      return;
+    }
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "eastward.js-"));
+    const filePath = path.join(tmpDir, this.node.name);
+    await fs.writeFile(filePath, data);
+    this.lua = decompile(filePath);
+    fs.unlink(filePath); // No need to await
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (!this.lua) {
       return;
     }
     super.beforeSave(filePath);
-    await fs.writeFile(filePath, this.data);
-  }
-
-  saveFileSync(filePath: string) {
-    if (!this.data) {
-      return;
-    }
-    super.beforeSave(filePath);
-    writeFileSync(filePath, this.data);
+    await fs.writeFile(filePath, this.lua);
   }
 }
