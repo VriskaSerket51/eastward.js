@@ -2,7 +2,7 @@ import { decode } from "@msgpack/msgpack";
 import { Asset, AssetNode } from "@/asset/node";
 import { GArchive } from "@/g-archive";
 import { deserialize } from "@/util/serializer";
-import { exists, readDirectory, readFile } from "@/util/filesystem";
+import { exists, isDir, isFile, readDirectory, readFile } from "@/util/filesystem";
 import path from "path";
 import { LuaObject } from "@/type";
 import { readdir } from "fs/promises";
@@ -193,7 +193,7 @@ export class Eastward {
     const { root } = this.config;
 
     const physicalPath = path.join(root, dirPath);
-    if (await exists(physicalPath)) {
+    if (await isDir(physicalPath)) {
       return await readDirectory(physicalPath);
     }
     const [archive, ...rest] = dirPath.split("/");
@@ -208,7 +208,7 @@ export class Eastward {
     const { root } = this.config;
 
     const physicalPath = path.join(root, filePath);
-    if (await exists(physicalPath)) {
+    if (await isFile(physicalPath)) {
       return true;
     }
     const [archive, ...rest] = filePath.split("/");
@@ -223,7 +223,7 @@ export class Eastward {
     const { root } = this.config;
 
     const physicalPath = path.join(root, "content", "game", filePath);
-    if (await exists(physicalPath)) {
+    if (await isFile(physicalPath)) {
       return await readFile(physicalPath);
     }
     const [archive, ...rest] = filePath.split("/");

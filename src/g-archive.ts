@@ -84,7 +84,9 @@ export class GArchive {
     }
 
     const fileNames = await this.getFileNames();
-    return fileNames.filter((fileName) => fileName.startsWith(dirName));
+    return fileNames
+      .filter((fileName) => fileName.startsWith(dirName))
+      .map((dir) => dir.substring(dirName.length + 1));
   }
 
   async checkFileData(name: string) {

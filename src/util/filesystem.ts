@@ -10,6 +10,24 @@ export async function exists(path: string) {
   }
 }
 
+export async function isFile(path: string) {
+  try {
+    const stat = await fs.stat(path);
+    return stat.isFile();
+  } catch {
+    return false;
+  }
+}
+
+export async function isDir(path: string) {
+  try {
+    const stat = await fs.stat(path);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 export async function readDirectory(dirPath: string) {
   return await fs.readdir(dirPath);
 }
