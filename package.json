@@ -1,6 +1,6 @@
 {
   "name": "eastward.js",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "description": "Typescript library for imort/export assets of the video game Eastward.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
