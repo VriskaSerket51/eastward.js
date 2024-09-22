@@ -1,6 +1,5 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
-import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
 export class MeshAsset extends Asset {
@@ -28,13 +27,5 @@ export class MeshAsset extends Asset {
     }
     super.beforeSave(filePath);
     await fs.writeFile(filePath, this.def);
-  }
-
-  saveFileSync(filePath: string) {
-    if (!this.def) {
-      return;
-    }
-    super.beforeSave(filePath);
-    writeFileSync(filePath, this.def);
   }
 }
