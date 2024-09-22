@@ -239,7 +239,7 @@ export class Eastward {
     if (!data) {
       return null;
     }
-    return decode(data);
+    return decode(data) as any;
   }
 
   async loadJSONFile(filePath: string) {
