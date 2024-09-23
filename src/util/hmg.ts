@@ -1,4 +1,8 @@
-import { compressBlock, compressBound, decompressBlock } from "lz4js";
+import {
+  compressBlock,
+  compressBlockBound,
+  uncompressBlock,
+} from "@rinsuki/lz4-ts";
 import { decodePng, encodePng } from "@lunapaint/png-codec";
 import { Buffer } from "@/buffer";
 import { Rect } from "@/type";
@@ -110,9 +114,9 @@ export async function png2hmg(png: Uint8Array) {
 export function encodeHMG(hmg: HMG): Uint8Array {
   const { width, height, data } = hmg;
 
-  let compressedData = new Uint8Array(compressBound(data.byteLength));
+  let compressedData = new Uint8Array(compressBlockBound(data.byteLength));
 
-  const count = compressBlock(data, compressedData, 0, data.length, 0);
+  const count = compressBlock(data, compressedData, 0);
   compressedData = compressedData.slice(0, count);
 
   const result = new Uint8Array(24 + count);
@@ -153,7 +157,7 @@ export function decodeHMG(raw: Uint8Array): HMG {
 
   const compressedData = buffer.readBytes(compressedSize);
   const data = new Uint8Array(width * height * 4);
-  decompressBlock(Uint8Array.from(compressedData), data, 0, compressedSize, 0);
+  uncompressBlock(Uint8Array.from(compressedData), data);
   return {
     width,
     height,

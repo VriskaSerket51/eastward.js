@@ -1,6 +1,10 @@
 import fs from "fs/promises";
 import path from "path";
 
+export async function mkdir(path: string) {
+  await fs.mkdir(path, { recursive: true });
+}
+
 export async function exists(path: string) {
   try {
     await fs.stat(path);

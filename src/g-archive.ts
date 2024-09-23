@@ -86,7 +86,7 @@ export class GArchive {
     const fileNames = await this.getFileNames();
     return fileNames
       .filter((fileName) => fileName.startsWith(dirName))
-      .map((dir) => dir.substring(dirName.length + 1));
+      .map((dir) => path.relative(dirName, dir).replace(/\\/g, "/"));
   }
 
   async checkFileData(name: string) {
@@ -139,6 +139,8 @@ export class GArchive {
       await this.doLazyLoad();
     }
 
+    const { verbose } = this.config;
+
     const write = (
       stream: WriteStream,
       chunk: string | Buffer | Uint8Array
@@ -190,8 +192,10 @@ export class GArchive {
     }
 
     for (const asset of Object.values(this.assets)) {
-      const { data } = asset;
-
+      const { name, data } = asset;
+      if (verbose >= LOG_LEVEL.INFO) {
+        console.error(name);
+      }
       await write(stream, data);
     }
   }

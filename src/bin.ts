@@ -3,9 +3,10 @@ import { Eastward, LOG_LEVEL } from "@/eastward";
 import { GArchive } from "@/g-archive";
 import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
 import arg from "arg";
-import path from "path";
+import path, { basename, dirname } from "path";
 import { decodeHMG, encodeHMG, hmg2png, png2hmg } from "./util/hmg";
-import { readFile, readFiles, writeFile } from "./util/filesystem";
+import { mkdir, readFile, readFiles, writeFile } from "./util/filesystem";
+import { encode } from "@msgpack/msgpack";
 
 function help() {
   console.log("Usage: eastward [MODE] [OPTION]... [FILE]...");
@@ -135,7 +136,10 @@ async function main() {
           for (const file of files) {
             try {
               const data = await readFile(file);
-              await archive.setFileData(file, data);
+              await archive.setFileData(
+                path.relative(root, file).replace(/\\/g, "/"),
+                data
+              );
               if (verbose >= LOG_LEVEL.INFO) {
                 console.info(file);
               }
@@ -170,7 +174,9 @@ async function main() {
               try {
                 const data = await readFile(file);
                 const png = await hmg2png(decodeHMG(data));
-                await writeFile(path.join(out, file), png);
+                const outputPath = path.join(out, path.relative(inPath, file));
+                await mkdir(dirname(outputPath));
+                await writeFile(outputPath, png);
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
@@ -181,6 +187,7 @@ async function main() {
           } else {
             const data = await readFile(inPath);
             const png = await hmg2png(decodeHMG(data));
+            await mkdir(dirname(out));
             await writeFile(out, png);
           }
         }
@@ -205,7 +212,9 @@ async function main() {
               try {
                 const data = await readFile(file);
                 const png = encodeHMG(await png2hmg(data));
-                await writeFile(path.join(out, file), png);
+                const outputPath = path.join(out, path.relative(inPath, file));
+                await mkdir(dirname(outputPath));
+                await writeFile(outputPath, png);
               } catch (err) {
                 const e = err as Error;
                 if (verbose >= LOG_LEVEL.ERROR) {
@@ -220,6 +229,111 @@ async function main() {
           }
         }
         break;
+
+      case "json2msg":
+        {
+          const recursive = args["-r"];
+          const inPath = args["--in"];
+          if (!inPath) {
+            throw new Error("Required option: --in");
+          }
+          const out = args["--out"];
+          if (!out) {
+            throw new Error("Required option: --out");
+          }
+
+          if (recursive) {
+            const files = await readFiles(inPath);
+
+            for (const file of files) {
+              try {
+                const data = await readFile(file);
+                const msg = encode(JSON.parse(new TextDecoder().decode(data)));
+                const outputPath =
+                  path.join(out, path.relative(inPath, file)) + ".packed";
+                await mkdir(dirname(outputPath));
+                await writeFile(outputPath, msg);
+              } catch (err) {
+                const e = err as Error;
+                if (verbose >= LOG_LEVEL.ERROR) {
+                  console.error(`Error at ${file}: ${e.message}`);
+                }
+              }
+            }
+          } else {
+            const data = await readFile(inPath);
+            const msg = encode(JSON.parse(new TextDecoder().decode(data)));
+            await writeFile(out + ".packed", msg);
+          }
+        }
+        break;
+
+      case "inject":
+        {
+          const root = args["--root"];
+          if (!root) {
+            throw new Error("Required option: --root");
+          }
+          const inPath = args["--in"];
+          if (!inPath) {
+            throw new Error("Required option: --in");
+          }
+          const out = args["--out"];
+          if (!out) {
+            throw new Error("Required option: --out");
+          }
+
+          const archive = new GArchive({ verbose });
+          await archive.load(inPath);
+          const files = await readFiles(root);
+          for (const file of files) {
+            const name = path.relative(root, file).replace(/\\/g, "/");
+            const data = await readFile(file);
+            await archive.setFileData(name, data);
+          }
+
+          await archive.saveFile(out);
+        }
+        break;
+
+      // case "inject":
+      //   {
+      //     const root = args["--root"];
+      //     if (!root) {
+      //       throw new Error("Required option: --root");
+      //     }
+      //     const name = args["--archive"];
+      //     if (!name) {
+      //       throw new Error("Required option: --archive");
+      //     }
+      //     const inPath = args["--in"];
+      //     if (!inPath) {
+      //       throw new Error("Required option: --in");
+      //     }
+      //     const out = args["--out"];
+      //     if (!out) {
+      //       throw new Error("Required option: --out");
+      //     }
+
+      //     const eastward = new Eastward({ root, verbose });
+      //     await eastward.init();
+
+      //     const archive = eastward.getArchive(name);
+      //     if (!archive) {
+      //       throw new Error(`archive name with '${name}.g' not found`);
+      //     }
+
+      //     const files = await readFiles(inPath);
+      //     for (const file of files) {
+      //       const name = path.relative(inPath, file).replace(/\\/g, "/");
+      //       const data = await readFile(file);
+      //       console.log(await archive.getFileData(name));
+      //       await archive.setFileData(name, data);
+      //     }
+
+      //     await archive.saveFile(out);
+      //   }
+      //   break;
 
       default:
         console.warn(`Unknown mode: ${mode}`);
