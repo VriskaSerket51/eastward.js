@@ -38,6 +38,16 @@ function help() {
   console.log("\t\t--in\t\tInput directory or file");
   console.log("\t\t--out\t\tOutput directory or file");
 
+  console.log("\tjson2msg\t\tRead JSON files and convert to msgpack files.");
+  console.log("\t\t-r\t\tRead recursive in directory");
+  console.log("\t\t--in\t\tInput directory or file");
+  console.log("\t\t--out\t\tOutput directory or file");
+
+  console.log("\tinject\t\tRead files from root and inject them into .g file.");
+  console.log("\t\t--root\t\tInput directory");
+  console.log("\t\t--in\t\tInput .g file");
+  console.log("\t\t--out\t\tOutput .g file");
+
   process.exit();
 }
 
@@ -263,7 +273,7 @@ async function main() {
           } else {
             const data = await readFile(inPath);
             const msg = encode(JSON.parse(new TextDecoder().decode(data)));
-            await writeFile(out + ".packed", msg);
+            await writeFile(out, msg);
           }
         }
         break;
@@ -295,45 +305,6 @@ async function main() {
           await archive.saveFile(out);
         }
         break;
-
-      // case "inject":
-      //   {
-      //     const root = args["--root"];
-      //     if (!root) {
-      //       throw new Error("Required option: --root");
-      //     }
-      //     const name = args["--archive"];
-      //     if (!name) {
-      //       throw new Error("Required option: --archive");
-      //     }
-      //     const inPath = args["--in"];
-      //     if (!inPath) {
-      //       throw new Error("Required option: --in");
-      //     }
-      //     const out = args["--out"];
-      //     if (!out) {
-      //       throw new Error("Required option: --out");
-      //     }
-
-      //     const eastward = new Eastward({ root, verbose });
-      //     await eastward.init();
-
-      //     const archive = eastward.getArchive(name);
-      //     if (!archive) {
-      //       throw new Error(`archive name with '${name}.g' not found`);
-      //     }
-
-      //     const files = await readFiles(inPath);
-      //     for (const file of files) {
-      //       const name = path.relative(inPath, file).replace(/\\/g, "/");
-      //       const data = await readFile(file);
-      //       console.log(await archive.getFileData(name));
-      //       await archive.setFileData(name, data);
-      //     }
-
-      //     await archive.saveFile(out);
-      //   }
-      //   break;
 
       default:
         console.warn(`Unknown mode: ${mode}`);
