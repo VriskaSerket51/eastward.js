@@ -41,6 +41,22 @@ Mode and Option:
         zip             Archive all data from root directory to output .g file.
                 --root          root directory
                 --out           output .g file
+        hmg2png         Read hmg files and convert to png files.
+                -r              Read recursive in directory
+                --in            Input directory or file
+                --out           Output directory or file
+        png2hmg         Read png files and convert to hmg files.
+                -r              Read recursive in directory
+                --in            Input directory or file
+                --out           Output directory or file
+        json2msg                Read JSON files and convert to msgpack files.
+                -r              Read recursive in directory
+                --in            Input directory or file
+                --out           Output directory or file
+        inject          Read files from root and inject them into .g file.
+                --root          Input directory
+                --in            Input .g file
+                --out           Output .g file
 ```
 
 ### Source code usage

@@ -83,7 +83,7 @@ async function main() {
 
     const mode = others.shift();
     if (!mode) {
-      throw new Error("Required option: [MODE]");
+      help();
     }
     const verbose = args["--verbose"] ?? LOG_LEVEL.ERROR;
 
