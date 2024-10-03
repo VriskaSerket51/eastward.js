@@ -1,7 +1,5 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
-import { generateGraphML } from "@/util/fsm";
-import { Lua } from "wasmoon-lua5.1";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 

@@ -35,6 +35,7 @@
   "devDependencies": {
     "@types/lz4js": "^0.2.1",
     "@types/node": "^22.5.5",
+    "@types/xml2js": "^0.4.14",
     "rimraf": "^6.0.1",
     "tsc-alias": "^1.8.10",
     "tsconfig-paths": "^4.2.0",
@@ -52,6 +53,7 @@
     "pofile": "^1.1.4",
     "wasmoon-lua5.1": "^1.18.10",
     "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
+    "xml2js": "^0.6.2",
     "xmlbuilder2": "^3.1.1"
   }
 }

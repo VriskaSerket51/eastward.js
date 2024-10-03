@@ -1,6 +1,7 @@
 import { Asset, AssetNode } from "@/asset/node";
 import { Eastward } from "@/eastward";
 import { cropHMG, decodeHMG, hmg2png } from "@/util/hmg";
+import { assert } from "console";
 import { writeFileSync } from "fs";
 import fs from "fs/promises";
 
@@ -85,6 +86,9 @@ export class DeckPackAsset extends Asset {
     }
     const atlas = decodeHMG(raw);
     for (const deck of this.pack.decks) {
+      if (deck.type == "deck2d.mquad") {
+        assert(deck.meshes.length == 1, deck.name)
+      }
     }
   }
 
