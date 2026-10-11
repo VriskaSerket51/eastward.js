@@ -1,8 +1,8 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import { uint8ArrayToBase64 } from "@/util/base64";
-import { writeFileSync } from "fs";
-import fs from "fs/promises";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import { uint8ArrayToBase64 } from "#util/base64";
+import { writeFileSync } from "node:fs";
+import fs from "node:fs/promises";
 
 export class BMFontAsset extends Asset {
   fnt: string | null = null;

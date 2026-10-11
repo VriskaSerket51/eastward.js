@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { Eastward, LOG_LEVEL } from "@/eastward";
-import { GArchive } from "@/g-archive";
-import { ASSET_TYPES, AssetType, register, registerAll } from "@/util/register";
-import arg from "arg";
-import path, { basename, dirname } from "path";
+import { Eastward, LOG_LEVEL } from "#eastward";
+import { GArchive } from "#g-archive";
+import { ASSET_TYPES, AssetType, register, registerAll } from "#util/register";
+import { parseArgs } from "node:util";
+import path, { basename, dirname } from "node:path";
 import { decodeHMG, encodeHMG, hmg2png, png2hmg } from "./util/hmg";
 import { mkdir, readFile, readFiles, writeFile } from "./util/filesystem";
 import { encode } from "@msgpack/msgpack";
@@ -58,19 +58,27 @@ async function main() {
   console.log();
 
   try {
-    const args = arg({
-      "--help": Boolean,
-      "--verbose": arg.COUNT,
-      "--root": String,
-      "--in": String,
-      "--out": String,
-      "--type": [String],
-      "-r": Boolean,
-      "-v": "--verbose",
-      "-T": "--type",
+    const { values, positionals: others } = parseArgs({
+      allowPositionals: true,
+      options: {
+        help: { type: "boolean" },
+        verbose: { type: "boolean", short: "v", multiple: true },
+        root: { type: "string" },
+        in: { type: "string" },
+        out: { type: "string" },
+        type: { type: "string", short: "T", multiple: true },
+        r: { type: "boolean" },
+      },
     });
-
-    const others = args["_"];
+    const args = {
+      "--help": values.help,
+      "--verbose": values.verbose?.length,
+      "--root": values.root,
+      "--in": values.in,
+      "--out": values.out,
+      "--type": values.type,
+      "-r": values.r,
+    };
 
     if (args["--help"]) {
       if (others.shift() == "type") {

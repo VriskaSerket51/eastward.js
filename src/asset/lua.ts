@@ -1,9 +1,6 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import fs from "fs/promises";
-import { decompile } from "luajit-decompiler";
-import os from "os";
-import path from "path";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import fs from "node:fs/promises";
 
 export class LuaAsset extends Asset {
   lua: string | null = null;
@@ -26,11 +23,8 @@ export class LuaAsset extends Asset {
     if (!data) {
       return;
     }
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "eastward.js-"));
-    const filePath = path.join(tmpDir, this.node.name);
-    await fs.writeFile(filePath, data);
-    this.lua = decompile(filePath);
-    fs.unlink(filePath); // No need to await
+    const { decompileAsync } = await import("luajit-decompiler");
+    this.lua = await decompileAsync(data);
   }
 
   async saveFile(filePath: string) {

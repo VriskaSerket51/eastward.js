@@ -1,5 +1,5 @@
-import { LocalePackAsset } from "@/asset/locale";
-import { Eastward } from "@/eastward";
+import { LocalePackAsset } from "#asset/locale";
+import { Eastward } from "#eastward";
 
 let isInited = false;
 const pathToPack: { [key: string]: LocalePackAsset } = {};

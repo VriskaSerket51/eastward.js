@@ -5,7 +5,7 @@ export class Buffer {
 
   constructor(raw: Uint8Array) {
     this.raw = raw;
-    this.viewer = new DataView(raw.buffer);
+    this.viewer = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   }
 
   readBytes(count: number) {
@@ -13,6 +13,15 @@ export class Buffer {
     for (let i = 0; i < count; i++) {
       value.push(this.readUInt8());
     }
+    return value;
+  }
+
+  readBytesView(count: number) {
+    if (!Number.isInteger(count) || count < 0 || count > this.raw.byteLength - this.offset) {
+      throw new RangeError("Byte count exceeds buffer bounds");
+    }
+    const value = this.raw.subarray(this.offset, this.offset + count);
+    this.offset += count;
     return value;
   }
 
@@ -44,6 +53,6 @@ export class Buffer {
     while ((char = this.readUInt8())) {
       value.push(char);
     }
-    return String.fromCharCode(...value);
+    return new TextDecoder().decode(Uint8Array.from(value));
   }
 }

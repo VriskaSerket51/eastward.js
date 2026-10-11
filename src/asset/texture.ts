@@ -1,9 +1,9 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import { uint8ArrayToBase64 } from "@/util/base64";
-import { cropHMG, decodeHMG, HMG, hmg2png } from "@/util/hmg";
-import { writeFileSync } from "fs";
-import fs from "fs/promises";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import { uint8ArrayToBase64 } from "#util/base64";
+import { cropHMG, decodeHMG, HMG, hmg2png } from "#util/hmg";
+import { writeFileSync } from "node:fs";
+import fs from "node:fs/promises";
 
 export class TextureAsset extends Asset {
   hmg: HMG | null = null;
@@ -156,14 +156,17 @@ export class TextureAsset extends Asset {
     dibHeader.setUint32(32, 0, true); // Number of colors in the palette
     dibHeader.setUint32(36, 0, true); // Important colors (0 = all colors are important)
 
+    const result = new Uint8Array(fileSize);
+    result.set(fHeader, 0);
+    result.set(dHeader, fileHeaderSize);
     for (let i = 0; i < raw.byteLength; i += 4) {
-      const tmp = raw[i];
-      raw[i] = raw[i + 2];
-      raw[i + 2] = tmp;
+      const offset = headerSize + i;
+      result[offset] = raw[i + 2];
+      result[offset + 1] = raw[i + 1];
+      result[offset + 2] = raw[i];
+      result[offset + 3] = raw[i + 3];
     }
-
-    // Combine headers and pixel data into one buffer
-    return new Uint8Array([...fHeader, ...dHeader, ...raw]);
+    return result;
   }
 
   toBMPBase64() {

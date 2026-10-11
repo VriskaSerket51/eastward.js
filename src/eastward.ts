@@ -1,17 +1,17 @@
 import { decode } from "@msgpack/msgpack";
-import { Asset, AssetNode } from "@/asset/node";
-import { GArchive } from "@/g-archive";
-import { deserialize } from "@/util/serializer";
+import { Asset, AssetNode } from "#asset/node";
+import { GArchive } from "#g-archive";
+import { deserialize } from "#util/serializer";
 import {
   exists,
   isDir,
   isFile,
   readDirectory,
   readFile,
-} from "@/util/filesystem";
-import path from "path";
-import { LuaObject } from "@/type";
-import { readdir } from "fs/promises";
+} from "#util/filesystem";
+import path from "node:path";
+import { LuaObject } from "#type";
+import { readdir } from "node:fs/promises";
 import { AssetType } from "./util/register";
 
 type AssetIndex = {
@@ -50,6 +50,7 @@ export class Eastward {
   assetLoaders: { [key: string]: AssetLoader } = {};
   scriptLibrary: { [key: string]: string } = {};
   textureLibrary: any = {};
+  private pendingAssets = new Map<string, Promise<Asset>>();
 
   constructor(config: Config) {
     const { root, verbose = LOG_LEVEL.ERROR } = config;
@@ -211,7 +212,7 @@ export class Eastward {
   async loadDirectory(dirPath: string) {
     const { root } = this.config;
 
-    const physicalPath = path.join(root, dirPath);
+    const physicalPath = path.join(root, "content", "game", dirPath);
     if (await isDir(physicalPath)) {
       return await readDirectory(physicalPath);
     }
@@ -226,7 +227,7 @@ export class Eastward {
   async checkFileExists(filePath: string) {
     const { root } = this.config;
 
-    const physicalPath = path.join(root, filePath);
+    const physicalPath = path.join(root, "content", "game", filePath);
     if (await isFile(physicalPath)) {
       return true;
     }
@@ -238,7 +239,7 @@ export class Eastward {
     return await this.archives[archive].checkFileData(virtualPath);
   }
 
-  async loadFile(filePath: string) {
+  async loadFile(filePath: string): Promise<Uint8Array | null> {
     const { root } = this.config;
 
     const physicalPath = path.join(root, "content", "game", filePath);
@@ -304,10 +305,18 @@ export class Eastward {
       return node.cachedAsset as T;
     }
 
-    const asset = new assetLoader.loader(this, node);
-    await asset.load();
-    node.cachedAsset = asset;
-    return asset as T;
+    let pending = this.pendingAssets.get(path);
+    if (!pending) {
+      pending = (async () => {
+        const asset = new assetLoader.loader(this, node);
+        await asset.load();
+        node.cachedAsset = asset;
+        return asset;
+      })();
+      this.pendingAssets.set(path, pending);
+    }
+    try { return await pending as T; }
+    finally { this.pendingAssets.delete(path); }
   }
 
   findScript(path: string) {

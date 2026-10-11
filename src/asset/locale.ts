@@ -1,13 +1,13 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import fs from "fs/promises";
-import path from "path";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Lua } from "wasmoon-lua5.1";
-import PO from "pofile";
-import { localeToPO } from "@/util/i18n";
+import { localeToPO } from "#util/i18n";
 
 type LocaleConfig = {
   guid: string;
+  source_locale?: string;
   items: { name: string; path: string }[];
 };
 
@@ -31,26 +31,36 @@ export class LocalePackAsset extends Asset {
   }
 
   async load() {
-    const langs = ["en", "ko", "de", "es", "fr", "zh-TW", "zh-CN", "ja"];
+    this.langs = [];
+    this.data = {};
     this.config = await this.eastward.loadJSONFile(
       this.node.objectFiles!.config
     );
+    const available = await this.eastward.loadDirectory(this.node.objectFiles!.data);
+    const langs = [...new Set([
+      this.config?.source_locale,
+      ...(available || []).filter(name => name && !name.includes("/")),
+      "en", "ko", "de", "es", "fr", "zh-TW", "zh-CN", "ja",
+    ].filter((lang): lang is string => Boolean(lang)))];
     for (const lang of langs) {
       const luaData = await this.eastward.loadTextFile(
         `${this.node.objectFiles!.data}/${lang}`
       );
       if (!luaData) {
-        return;
+        continue;
       }
       const lua = await Lua.create();
-      const value = await lua.doString(luaData);
-      const i18n: Map<string, any> = value.$detach();
-      lua.global.close();
-      this.langs.push(lang);
-      for (const key of i18n.keys()) {
-        i18n.set(key, Object.fromEntries(i18n.get(key)));
+      try {
+        const value = await lua.doString(luaData);
+        const i18n: Map<string, any> = value.$detach();
+        for (const key of i18n.keys()) {
+          i18n.set(key, Object.fromEntries(i18n.get(key)));
+        }
+        this.data[lang] = Object.fromEntries(i18n);
+        this.langs.push(lang);
+      } finally {
+        lua.global.close();
       }
-      this.data[lang] = Object.fromEntries(i18n);
     }
   }
 

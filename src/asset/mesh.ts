@@ -1,8 +1,8 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import { xml2mesh } from "@/util/mesh";
-import fs from "fs/promises";
-import path from "path";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import { xml2mesh } from "#util/mesh";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 export class MeshAsset extends Asset {
   mesh: { obj: string; mtl: string; tex: string[] } | null = null;

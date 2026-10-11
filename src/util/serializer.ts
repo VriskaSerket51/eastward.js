@@ -1,7 +1,7 @@
 export function deserialize(obj: any, data: any) {
   const map = data.map || {};
   const rootId = data.root;
-  const objMap: any = {};
+  const objMap: any = Object.create(null);
 
   if (!rootId) {
     return null;
@@ -10,6 +10,7 @@ export function deserialize(obj: any, data: any) {
   deserializeObjectMap(map, objMap, false, rootId, obj);
   const rootTarget = objMap[rootId];
 
+  if (!rootTarget) throw new Error(`serializer root not found: ${rootId}`);
   return rootTarget[0];
 }
 
@@ -39,7 +40,7 @@ function prepareObjectMap(
 ) {
   objMap = objMap || {};
   objIgnored = objIgnored || false;
-  const objAliases: any = {};
+  const objAliases: any = Object.create(null);
   const ids: string[] = [];
   let idCount = 0;
 
@@ -73,12 +74,11 @@ function prepareObjectMap(
         if (ns0) {
           alias = makeId(alias, ns0);
         }
+        objAliases[id] = alias;
+        objMap[id] = alias;
       } else {
         objMap[id] = [objData.body, objData];
       }
-
-      objAliases[id] = alias;
-      objMap[id] = alias;
     } else {
       // const model = Model.fromName(modelName);
 
@@ -101,8 +101,11 @@ function prepareObjectMap(
 
   for (let [id, alias] of Object.entries<any>(objAliases)) {
     let origin = null;
+    const visited = new Set<string>();
 
     while (alias) {
+      if (visited.has(alias)) throw new Error(`serializer alias cycle: ${id}`);
+      visited.add(alias);
       origin = objMap[alias];
 
       if (typeof origin == "string") {
@@ -113,7 +116,7 @@ function prepareObjectMap(
     }
 
     if (!origin) {
-      throw new Error(`${objMap} alias not found ${id} ${alias}`);
+      throw new Error(`serializer alias not found: ${id} -> ${alias}`);
     }
 
     objMap[id] = origin;
@@ -123,7 +126,7 @@ function prepareObjectMap(
 }
 
 function makeId(refId: string, namespace: string) {
-  return namespace && `${refId}:${namespace || refId}`;
+  return namespace ? `${refId}:${namespace}` : refId;
 }
 
 function deserializeObjectMapData(objMap: any, objIgnored: any) {
@@ -144,6 +147,8 @@ function deserializeObjectMapData(objMap: any, objIgnored: any) {
 }
 
 function deserializeObject(obj: any, data: any, objMap: any) {
+  // Raw bodies are already decoded and must not be interpreted as model references.
+  if (!data.model) return;
   const body = data.body;
   for (const key of Object.keys(body)) {
     const value = body[key];

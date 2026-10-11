@@ -4,8 +4,8 @@ import {
   uncompressBlock,
 } from "@rinsuki/lz4-ts";
 import { decodePng, encodePng } from "@lunapaint/png-codec";
-import { Buffer } from "@/buffer";
-import { Rect } from "@/type";
+import { Buffer } from "#buffer";
+import { Rect } from "#type";
 
 export type HMG = {
   width: number;
@@ -116,8 +116,24 @@ export function encodeHMG(hmg: HMG): Uint8Array {
 
   let compressedData = new Uint8Array(compressBlockBound(data.byteLength));
 
-  const count = compressBlock(data, compressedData, 0);
-  compressedData = compressedData.slice(0, count);
+  let count = compressBlock(data, compressedData, 0);
+  if (count === 0) {
+    // LZ4 compressors return zero for short/incompressible input. Encode a
+    // literal-only block rather than emitting an empty, invalid image.
+    const extensionCount = data.length >= 15 ? Math.floor((data.length - 15) / 255) + 1 : 0;
+    compressedData = new Uint8Array(1 + extensionCount + data.length);
+    compressedData[0] = Math.min(data.length, 15) << 4;
+    let offset = 1;
+    if (data.length >= 15) {
+      let remaining = data.length - 15;
+      while (remaining >= 255) { compressedData[offset++] = 255; remaining -= 255; }
+      compressedData[offset++] = remaining;
+    }
+    compressedData.set(data, offset);
+    count = compressedData.length;
+  } else {
+    compressedData = compressedData.slice(0, count);
+  }
 
   const result = new Uint8Array(24 + count);
   result.set(new TextEncoder().encode("PGF"), 0);
@@ -143,7 +159,7 @@ export function decodeHMG(raw: Uint8Array): HMG {
 
   const dummyLen1 = buffer.readInt8();
   buffer.readInt32(); // File Size
-  buffer.readBytes(dummyLen1); // Dummy Chunk
+  buffer.readBytesView(dummyLen1); // Dummy Chunk
 
   const compressedSize = buffer.readInt32();
   const width = buffer.readInt32();
@@ -153,11 +169,11 @@ export function decodeHMG(raw: Uint8Array): HMG {
   buffer.readInt8(); // Fixed to 1, may means TRUE_TYPE
   const dummyLen2 = buffer.readInt8();
   buffer.readInt8(); // Maybe Compression type, 0 is lz4
-  buffer.readBytes(dummyLen2); // Another Dummy Chunk
+  buffer.readBytesView(dummyLen2); // Another Dummy Chunk
 
-  const compressedData = buffer.readBytes(compressedSize);
+  const compressedData = buffer.readBytesView(compressedSize);
   const data = new Uint8Array(width * height * 4);
-  uncompressBlock(Uint8Array.from(compressedData), data);
+  uncompressBlock(compressedData, data);
   return {
     width,
     height,

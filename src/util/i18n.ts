@@ -6,6 +6,7 @@ export function poToLocale(data: string) {
   po.items.map((item) => {
     locale[item.msgid] = item.msgstr[0];
   });
+  return locale;
 }
 
 export function localeToPO(locale: any) {

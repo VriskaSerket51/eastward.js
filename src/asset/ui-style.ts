@@ -1,7 +1,7 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import { writeFileSync } from "fs";
-import fs from "fs/promises";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import { writeFileSync } from "node:fs";
+import fs from "node:fs/promises";
 
 export class UIStyleAsset extends Asset {
   def: string | null = null;

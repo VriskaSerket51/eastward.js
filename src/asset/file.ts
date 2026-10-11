@@ -1,5 +1,5 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
 
 export class FileAsset extends Asset {
   constructor(eastward: Eastward, node: AssetNode) {

@@ -1,5 +1,5 @@
-import { AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
+import { AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
 import { init, translateAsset } from "./translate";
 
 function decompileSQNode(node: any, indentLevel: number) {

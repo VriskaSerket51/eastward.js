@@ -104,5 +104,6 @@ dist
 .tern-port
 
 .vscode
+.serena/
 test/
 extract/

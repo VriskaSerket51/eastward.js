@@ -1,45 +1,46 @@
-import { AnimatorDataAsset } from "@/asset/animator-data";
-import { AssetMapAsset } from "@/asset/asset-map";
-import { CodeTilesetAsset, NamedTilesetPackAsset } from "@/asset/tileset";
-import { DataCsvAsset, DataJsonAsset, DataXlsAsset } from "@/asset/data";
-import { Deck2DAsset, DeckPackAsset } from "@/asset/deck-2d";
-import { EffectAsset } from "@/asset/effect";
-import { FileAsset } from "@/asset/file";
-import { BMFontAsset, TTFFontAsset } from "@/asset/font";
-import { GLSLAsset } from "@/asset/glsl";
-import { LocalePackAsset } from "@/asset/locale";
-import { LuaAsset } from "@/asset/lua";
-import { MSpriteAsset } from "@/asset/m-sprite";
-import { MaterialAsset } from "@/asset/material";
-import { MeshAsset } from "@/asset/mesh";
-import { MovieAsset } from "@/asset/movie";
-import { PhysicsBodyDefAsset, PhysicsMaterialAsset } from "@/asset/physics";
-import { PrefabAsset } from "@/asset/prefab";
-import { RenderTargetAsset } from "@/asset/render-target";
-import { SceneAsset, ScenePortalGraphAsset } from "@/asset/scene";
+import { AnimatorDataAsset } from "#asset/animator-data";
+import { AssetMapAsset } from "#asset/asset-map";
+import { CodeTilesetAsset, NamedTilesetPackAsset, NamedTilesetAsset } from "#asset/tileset";
+import { DataCsvAsset, DataJsonAsset, DataXlsAsset } from "#asset/data";
+import { Deck2DAsset, DeckPackAsset, DeckPackItemAsset } from "#asset/deck-2d";
+import { ProtoAsset, RawAsset } from "#asset/proto";
+import { EffectAsset } from "#asset/effect";
+import { FileAsset } from "#asset/file";
+import { BMFontAsset, TTFFontAsset } from "#asset/font";
+import { GLSLAsset } from "#asset/glsl";
+import { LocalePackAsset } from "#asset/locale";
+import { LuaAsset } from "#asset/lua";
+import { MSpriteAsset } from "#asset/m-sprite";
+import { MaterialAsset } from "#asset/material";
+import { MeshAsset } from "#asset/mesh";
+import { MovieAsset } from "#asset/movie";
+import { PhysicsBodyDefAsset, PhysicsMaterialAsset } from "#asset/physics";
+import { PrefabAsset } from "#asset/prefab";
+import { RenderTargetAsset } from "#asset/render-target";
+import { SceneAsset, ScenePortalGraphAsset } from "#asset/scene";
 import {
   FSMSchemeAsset,
   QuestSchemeAsset,
   TBSchemeAsset,
-} from "@/asset/scheme";
+} from "#asset/scheme";
 import {
   BTScriptAsset,
   COMScriptAsset,
   ShaderScriptAsset,
-} from "@/asset/script";
-import { SQScriptAsset } from "@/asset/sq";
-import { StoryGraphAsset } from "@/asset/story-graph";
-import { StylesheetAsset } from "@/asset/stylesheet";
-import { TextAsset } from "@/asset/text";
+} from "#asset/script";
+import { SQScriptAsset } from "#asset/sq";
+import { StoryGraphAsset } from "#asset/story-graph";
+import { StylesheetAsset } from "#asset/stylesheet";
+import { TextAsset } from "#asset/text";
 import {
   LutTextureAsset,
   MultiTextureAsset,
   TextureAsset,
   TexturePackAsset,
   TextureProcessorAsset,
-} from "@/asset/texture";
-import { UIStyleAsset } from "@/asset/ui-style";
-import { Eastward } from "@/eastward";
+} from "#asset/texture";
+import { UIStyleAsset } from "#asset/ui-style";
+import { Eastward } from "#eastward";
 
 const typeMap = {
   animator_data: AnimatorDataAsset,
@@ -51,6 +52,16 @@ const typeMap = {
   deck2d: Deck2DAsset,
   deck_pack: DeckPackAsset,
   deck_pack_raw: DeckPackAsset,
+  'deck2d.mquad': DeckPackItemAsset,
+  'deck2d.mtileset': DeckPackItemAsset,
+  'deck2d.quads': DeckPackItemAsset,
+  'deck2d.quad': DeckPackItemAsset,
+  'deck2d.stretchpatch': DeckPackItemAsset,
+  'deck2d.tileset': DeckPackItemAsset,
+  'deck2d.quad_array': DeckPackItemAsset,
+  'deck2d.polygon': DeckPackItemAsset,
+  proto: ProtoAsset,
+  raw: RawAsset,
   effect: EffectAsset,
   file: FileAsset,
   font_bmfont: BMFontAsset,
@@ -63,6 +74,7 @@ const typeMap = {
   material: MaterialAsset,
   mesh: MeshAsset,
   named_tileset_pack: NamedTilesetPackAsset,
+  named_tileset: NamedTilesetAsset,
   physics_body_def: PhysicsBodyDefAsset,
   physics_material: PhysicsMaterialAsset,
   prefab: PrefabAsset,

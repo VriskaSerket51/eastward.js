@@ -1,12 +1,12 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
 import { TextureAsset } from "./texture";
-import { Rect } from "@/type";
-import path from "path";
-import { cropHMG, emptyHMG, HMG, mergeHMG } from "@/util/hmg";
-import { writeFile } from "@/util/filesystem";
+import { Rect } from "#type";
+import path from "node:path";
+import { cropHMG, emptyHMG, HMG, mergeHMG } from "#util/hmg";
+import { writeFile } from "#util/filesystem";
 import WebP from "node-webpmux";
-import { uint8ArrayToBase64 } from "@/util/base64";
+import { uint8ArrayToBase64 } from "#util/base64";
 
 type Animation = {
   deprecated: boolean;
@@ -46,6 +46,7 @@ type MultiSprite = {
 
 export class MSpriteAsset extends Asset {
   animations: { [key: string]: Uint8Array } | null = null;
+  definition: MultiSprite | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -71,13 +72,15 @@ export class MSpriteAsset extends Asset {
   }
 
   async load() {
-    let def: MultiSprite = await this.eastward.loadMsgPackFile(
-      this.node.objectFiles!.packed_def
-    );
+    let def: MultiSprite | null = this.node.objectFiles?.packed_def
+      ? await this.eastward.loadMsgPackFile(this.node.objectFiles.packed_def)
+      : null;
 
     if (!def) {
       def = await this.eastward.loadJSONFile(this.node.objectFiles!.def);
     }
+    if (!def) throw new Error(`invalid msprite definition: ${this.node.path}`);
+    this.definition = def;
 
     const baseName = path.parse(this.node.name).name;
     const textNodePath = `${this.node.path}/${baseName}_texture`;
@@ -132,7 +135,7 @@ export class MSpriteAsset extends Asset {
     }
 
     await WebP.Image.initLib();
-    const asyncOps = Object.keys(def.anims).map(async (id) => {
+    for (const id of Object.keys(def.anims)) {
       const anim = def.anims[id];
 
       const bound = this._calculateBound(
@@ -162,7 +165,8 @@ export class MSpriteAsset extends Asset {
           img: frameImage,
           x: 0,
           y: 0,
-          delay: delay,
+          // MOAI animation keys use seconds; WebP frame durations use milliseconds.
+          delay: Math.max(1, Math.round(delay * 1000)),
           dispose: false,
           blend: false,
         });
@@ -175,9 +179,7 @@ export class MSpriteAsset extends Asset {
         height: bound.h,
       });
       this.animations![anim.name] = buffer;
-    });
-
-    await Promise.allSettled(asyncOps);
+    }
   }
 
   _calculateBound(rectOrRects: Rect | Rect[]): Rect {
@@ -196,8 +198,8 @@ export class MSpriteAsset extends Asset {
 
     let xMin = Number.MAX_VALUE,
       yMin = Number.MAX_VALUE;
-    let xMax = Number.MIN_VALUE,
-      yMax = Number.MIN_VALUE;
+    let xMax = -Infinity,
+      yMax = -Infinity;
     for (const rect of rects) {
       const { x, y, w, h } = rect;
       const min = {
@@ -234,6 +236,9 @@ export class MSpriteAsset extends Asset {
       return;
     }
     super.beforeSave(path.join(filePath, "template"));
+    if (this.definition) {
+      await writeFile(path.join(filePath, 'sprite.json'), new TextEncoder().encode(JSON.stringify(this.definition, null, 2)));
+    }
     for (const name in this.animations) {
       const animation = this.animations[name];
       await writeFile(

@@ -1,7 +1,7 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import fs from "fs/promises";
-import path from "path";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 export class SceneAsset extends Asset {
   index: any = null;

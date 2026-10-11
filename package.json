@@ -1,18 +1,27 @@
 {
   "name": "eastward.js",
   "version": "0.0.56",
-  "description": "Typescript library for imort/export assets of the video game Eastward.",
+  "description": "TypeScript library for importing and exporting assets of the video game Eastward.",
+  "type": "commonjs",
+  "imports": {
+    "#*": {
+      "development": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "eastward": "dist/bin.js"
   },
   "scripts": {
-    "test": "tsx watch ./test/index.ts",
+    "test": "npm run build && node --test tests/*.cjs",
+    "test:game": "npm run build && node scripts/audit-game.cjs",
     "test:bin": "npm run build && node ./dist/bin.js",
-    "build": "rimraf ./dist && tsc && tsc-alias",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
+    "typecheck": "tsc --noEmit",
     "start": "npm run build && node ./dist/index.js",
-    "dev": "tsx watch ./src/index.ts"
+    "dev": "node --conditions=development --import tsx --watch ./src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -33,27 +42,26 @@
   },
   "homepage": "https://github.com/VriskaSerket51/eastward.js#readme",
   "devDependencies": {
-    "@types/lz4js": "^0.2.1",
-    "@types/node": "^22.5.5",
+    "@types/node": "^24.19.2",
     "@types/xml2js": "^0.4.14",
-    "rimraf": "^6.0.1",
-    "tsc-alias": "^1.8.10",
-    "tsconfig-paths": "^4.2.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.2"
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "@lunapaint/png-codec": "^0.2.0",
-    "@metastable/cppzst": "^2.1.0",
-    "@msgpack/msgpack": "^3.0.0-beta2",
+    "@msgpack/msgpack": "^3.1.3",
     "@rinsuki/lz4-ts": "^1.0.1",
-    "arg": "^5.0.2",
-    "luajit-decompiler": "^1.0.3",
-    "node-webpmux": "^3.2.0",
+    "luajit-decompiler": "https://github.com/VriskaSerket51/node-luajit-decompiler/archive/b78439e.tar.gz",
+    "node-webpmux": "^3.2.1",
     "pofile": "^1.1.4",
-    "wasmoon-lua5.1": "^1.18.10",
+    "wasmoon-lua5.1": "^1.18.12",
     "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
-    "xml2js": "^0.6.2",
-    "xmlbuilder2": "^3.1.1"
+    "xml2js": "^0.6.2"
+  },
+  "allowScripts": {
+    "luajit-decompiler": true
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

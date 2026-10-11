@@ -1,12 +1,13 @@
-import { Asset, AssetNode } from "@/asset/node";
-import { Eastward } from "@/eastward";
-import { cropHMG, decodeHMG, hmg2png } from "@/util/hmg";
-import { assert } from "console";
-import { writeFileSync } from "fs";
-import fs from "fs/promises";
+import { Asset, AssetNode } from "#asset/node";
+import { Eastward } from "#eastward";
+import { decodeHMG, hmg2png, HMG } from "#util/hmg";
+import path from "node:path";
+import { writeFileSync } from "node:fs";
+import fs from "node:fs/promises";
 
 export class Deck2DAsset extends Asset {
   def: string | null = null;
+  pack: { decks: any[] } | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -22,6 +23,11 @@ export class Deck2DAsset extends Asset {
 
   async load() {
     this.def = await this.eastward.loadTextFile(this.node.objectFiles!.def);
+    if (this.def) {
+      const data = JSON.parse(this.def);
+      const body = data.map?.[data.root]?.body;
+      if (body?.decks) this.pack = { decks: body.decks.map((item: any) => item.body || item) };
+    }
   }
 
   async saveFile(filePath: string) {
@@ -44,7 +50,8 @@ export class Deck2DAsset extends Asset {
 type MQuadDeck = {
   meshes: { uv: number[][]; verts: number[][] }[];
   name: string;
-  type: "deck2d.mquad";
+  type: string;
+  [key: string]: any;
 };
 
 type DeckPack = {
@@ -57,6 +64,8 @@ type DeckPack = {
 
 export class DeckPackAsset extends Asset {
   pack: DeckPack | null = null;
+  atlas: HMG | null = null;
+  normalAtlas: HMG | null = null;
 
   constructor(eastward: Eastward, node: AssetNode) {
     super(eastward, node);
@@ -71,7 +80,6 @@ export class DeckPackAsset extends Asset {
   }
 
   async load() {
-    // TODO
     this.pack = await this.eastward.loadJSONFile(
       `${this.node.objectFiles!.export}/decks.json`
     );
@@ -84,19 +92,34 @@ export class DeckPackAsset extends Asset {
     if (!raw) {
       return;
     }
-    const atlas = decodeHMG(raw);
-    for (const deck of this.pack.decks) {
-      if (deck.type == "deck2d.mquad") {
-        assert(deck.meshes.length == 1, deck.name)
-      }
-    }
+    this.atlas = decodeHMG(raw);
+    const normal = await this.eastward.loadFile(`${this.node.objectFiles!.export}/decks_n.hmg`);
+    this.normalAtlas = normal ? decodeHMG(normal) : null;
   }
 
   async saveFile(filePath: string) {
-    // if (!this.export) {
-    //   return;
-    // }
-    // super.beforeSave(filePath);
-    // await fs.writeFile(filePath, this.export);
+    if (!this.pack) return;
+    await fs.mkdir(filePath, { recursive: true });
+    await fs.writeFile(path.join(filePath, 'decks.json'), JSON.stringify(this.pack, null, 2));
+    if (this.atlas) await fs.writeFile(path.join(filePath, 'decks.png'), await hmg2png(this.atlas));
+    if (this.normalAtlas) await fs.writeFile(path.join(filePath, 'decks_n.png'), await hmg2png(this.normalAtlas));
+  }
+}
+
+/** A child deck preserves the complete geometry and references its parent atlas. */
+export class DeckPackItemAsset extends Asset {
+  data: any = null;
+  pack: DeckPackAsset | Deck2DAsset | null = null;
+  get type() { return Asset.Type.JSON; }
+  async load() {
+    this.pack = await this.eastward.loadAsset<DeckPackAsset | Deck2DAsset>(this.node.parent);
+    this.data = this.pack?.pack?.decks.find(deck => deck.name === this.node.name) || null;
+    if (!this.data) throw new Error(`deck not found: ${this.node.path}`);
+  }
+  async toString() { return JSON.stringify(this.data); }
+  async saveFile(filePath: string) {
+    if (!this.data) return;
+    this.beforeSave(filePath);
+    await fs.writeFile(filePath, JSON.stringify(this.data, null, 2));
   }
 }

@@ -1,10 +1,15 @@
-import { LOG_LEVEL } from "@/eastward";
+import { LOG_LEVEL } from "#eastward";
 import { Buffer as BufferWrapper } from "./buffer";
-import { exists, readFile } from "@/util/filesystem";
-import { compress, decompress } from "@metastable/cppzst";
-import { createWriteStream, WriteStream } from "fs";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { exists, readFile } from "#util/filesystem";
+import { zstdCompress, zstdDecompress } from "node:zlib";
+import { promisify } from "node:util";
+import { createWriteStream, WriteStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { finished } from "node:stream/promises";
+import path from "node:path";
+
+const compress = promisify(zstdCompress);
+const decompress = promisify(zstdDecompress);
 
 type File = {
   name: string;
@@ -22,6 +27,7 @@ export class GArchive {
   assets: { [key: string]: File } = {};
   filePaths: string[] = [];
   loaded = false;
+  private loading: Promise<void> | null = null;
 
   constructor(config: Config) {
     const { verbose = LOG_LEVEL.ERROR } = config;
@@ -39,10 +45,15 @@ export class GArchive {
   }
 
   async doLazyLoad() {
-    for (const filePath of this.filePaths) {
-      await this.load(filePath);
+    if (this.loaded) return;
+    if (!this.loading) {
+      this.loading = (async () => {
+        for (const filePath of this.filePaths) await this.load(filePath);
+        this.loaded = true;
+      })();
     }
-    this.loaded = true;
+    try { await this.loading; }
+    finally { this.loading = null; }
   }
 
   async load(filePath: string) {
@@ -108,8 +119,12 @@ export class GArchive {
     }
     const { isCompressed, data } = assets;
     if (isCompressed) {
+      const decompressed = await decompress(Buffer.from(data));
+      if (!(decompressed instanceof Uint8Array)) {
+        throw new TypeError("Zstandard decompression returned invalid data");
+      }
       assets.isCompressed = false;
-      assets.data = await decompress(Buffer.from(data));
+      assets.data = decompressed;
     }
     return assets.data;
   }
@@ -157,46 +172,61 @@ export class GArchive {
     };
 
     let offset = Object.values(this.assets)
-      .map((asset) => asset.name.length + 1 + 16)
+      .map((asset) => Buffer.byteLength(asset.name, "utf8") + 1 + 16)
       .reduce((a, b) => a + b, 8);
 
     const stream = createWriteStream(filePath);
-    await write(stream, new Uint8Array(Uint32Array.from([27191]).buffer));
-    await write(
-      stream,
-      new Uint8Array(Uint32Array.from([Object.keys(this.assets).length]).buffer)
-    );
-
-    for (const asset of Object.values(this.assets)) {
-      const { name, isCompressed, decompressedSize } = asset;
-      if (!isCompressed) {
-        asset.isCompressed = true;
-        asset.data = await compress(Buffer.from(asset.data));
-      }
-
-      await write(stream, name);
-      await write(stream, Uint8Array.from([0]));
+    const completion = finished(stream);
+    // Handle early stream errors while compression or writes are in progress.
+    void completion.catch(() => {});
+    try {
+      await write(stream, new Uint8Array(Uint32Array.from([27191]).buffer));
       await write(
         stream,
-        new Uint8Array(
-          Uint32Array.from([
-            offset,
-            2,
-            decompressedSize,
-            asset.data.byteLength,
-          ]).buffer
-        )
+        new Uint8Array(Uint32Array.from([Object.keys(this.assets).length]).buffer)
       );
 
-      offset += asset.data.byteLength;
-    }
+      for (const asset of Object.values(this.assets)) {
+        const { name, isCompressed, decompressedSize } = asset;
+        if (!isCompressed) {
+          const compressed = await compress(Buffer.from(asset.data));
+          if (!(compressed instanceof Uint8Array)) {
+            throw new TypeError("Zstandard compression returned invalid data");
+          }
+          asset.isCompressed = true;
+          asset.data = compressed;
+        }
 
-    for (const asset of Object.values(this.assets)) {
-      const { name, data } = asset;
-      if (verbose >= LOG_LEVEL.INFO) {
-        console.error(name);
+        await write(stream, name);
+        await write(stream, Uint8Array.from([0]));
+        await write(
+          stream,
+          new Uint8Array(
+            Uint32Array.from([
+              offset,
+              2,
+              decompressedSize,
+              asset.data.byteLength,
+            ]).buffer
+          )
+        );
+
+        offset += asset.data.byteLength;
       }
-      await write(stream, data);
+
+      for (const asset of Object.values(this.assets)) {
+        const { name, data } = asset;
+        if (verbose >= LOG_LEVEL.INFO) {
+          console.error(name);
+        }
+        await write(stream, data);
+      }
+      stream.end();
+      await completion;
+    } catch (err) {
+      stream.destroy();
+      await completion.catch(() => {});
+      throw err;
     }
   }
 

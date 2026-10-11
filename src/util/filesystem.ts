@@ -1,5 +1,6 @@
-import fs from "fs/promises";
-import path from "path";
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { Buffer } from "node:buffer";
 
 export async function mkdir(path: string) {
   await fs.mkdir(path, { recursive: true });
@@ -36,14 +37,14 @@ export async function readDirectory(dirPath: string) {
   return await fs.readdir(dirPath);
 }
 
-export async function readFile(filePath: string) {
+export async function readFile(filePath: string): Promise<Buffer> {
   return await fs.readFile(filePath);
 }
 
 export async function readFiles(dirPath: string) {
   return (await fs.readdir(dirPath, { recursive: true, withFileTypes: true }))
     .filter((e) => e.isFile())
-    .map((e) => path.join(e.path, e.name));
+    .map((e) => path.join(e.parentPath, e.name));
 }
 
 export async function writeFile(filePath: string, data: Uint8Array) {
