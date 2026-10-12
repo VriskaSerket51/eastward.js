@@ -107,3 +107,5 @@ dist
 .serena/
 test/
 extract/
+# Generated source restoration output (never package game resources)
+/game/

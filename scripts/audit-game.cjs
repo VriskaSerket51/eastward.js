@@ -8,14 +8,16 @@ async function main() {
   const game = new Eastward({ root });
   registerAll(game);
   await game.init();
-  const report = { nodes: Object.keys(game.nodes).length, types: {}, unsupported: {}, checks: {}, failures: [] };
+  const report = { nodes: Object.keys(game.nodes).length, types: {}, unsupported: {}, unimplemented: {}, deploymentOmissions: {}, checks: {}, failures: [], sourceIssues: [] };
   for (const node of Object.values(game.nodes)) {
     report.types[node.type] = (report.types[node.type] || 0) + 1;
     if (node.type !== 'folder' && !ASSET_TYPES.includes(node.type)) {
       report.unsupported[node.type] = (report.unsupported[node.type] || 0) + 1;
     }
+    if (['file', 'texture_processor'].includes(node.type) && !Object.keys(node.objectFiles ?? {}).length) report.deploymentOmissions[node.type] = (report.deploymentOmissions[node.type] || 0) + 1;
+    if (node.parent && (!node.parentNode || game.nodes[node.parent] !== node.parentNode || node.parentNode.children[node.name] !== node)) report.failures.push({ path: node.path, error: 'Broken parent/child identity' });
   }
-  for (const type of ['texture', 'locale_pack', 'sq_script', 'proto', 'raw', 'deck_pack', 'deck_pack_raw', 'deck2d.mquad', 'deck2d.mtileset', 'deck2d.quads', 'deck2d.quad', 'deck2d.stretchpatch', 'deck2d.tileset', 'deck2d.quad_array', 'deck2d.polygon', 'named_tileset_pack', 'named_tileset']) {
+  for (const type of ASSET_TYPES.filter(type => type !== 'msprite')) {
     report.checks[type] = { passed: 0, failed: 0 };
     for (const node of Object.values(game.nodes).filter(node => node.type === type)) {
       try {
@@ -26,12 +28,17 @@ async function main() {
         if (type === 'sq_script' && !asset.raw) throw new Error('Missing SQ data');
         if (type === 'proto' && !asset.data) throw new Error('Missing proto data');
         if (type.startsWith('deck_pack') && !asset.pack) throw new Error('Missing deck pack');
+        if (type === 'scene' && !asset.index) throw new Error('Missing scene index');
+        if (type === 'mesh' && !asset.mesh) throw new Error('Missing mesh');
+        if (['text', 'lua', 'glsl', 'csv'].includes(asset.type) && await asset.toString() === null) throw new Error('Missing asset payload');
         report.checks[type].passed++;
         // Do not retain every decoded texture in memory during the audit.
         node.cachedAsset = null;
       } catch (error) {
         report.checks[type].failed++;
-        report.failures.push({ path: node.path, error: error.message });
+        const issue = { path: node.path, error: error.message };
+        if ((type === 'data_json' && error instanceof SyntaxError) || (type === 'text' && !node.objectFiles?.data)) report.sourceIssues.push(issue);
+        else report.failures.push(issue);
       }
     }
     console.log(type, report.checks[type]);
@@ -71,6 +78,6 @@ async function main() {
   }
   if (process.argv[3]) writeFileSync(process.argv[3], JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
-  if (report.failures.length) process.exitCode = 1;
+  if (report.failures.length || report.sourceIssues.length) process.exitCode = 1;
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
