@@ -23,7 +23,7 @@ export class AssetMapAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +31,7 @@ export class AssetMapAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);

@@ -23,7 +23,7 @@ export class UIStyleAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +31,7 @@ export class UIStyleAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);

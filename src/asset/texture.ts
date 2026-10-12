@@ -1,11 +1,15 @@
 import { Asset, AssetNode } from "#asset/node";
+import { FileAsset } from "#asset/file";
 import { Eastward } from "#eastward";
 import { uint8ArrayToBase64 } from "#util/base64";
-import { cropHMG, decodeHMG, HMG, hmg2png } from "#util/hmg";
-import { writeFileSync } from "node:fs";
+import { cropHMG, decodeHMG, HMG, hmg2png, hmg2pngSync } from "#util/hmg";
+import { writeFileSync, mkdirSync } from "node:fs";
 import fs from "node:fs/promises";
+import { resolveWithin } from "#util/filesystem";
+import { layersToPSD } from "#util/source-image";
 
 export class TextureAsset extends Asset {
+  private static atlasLoads = new WeakMap<object, Promise<HMG[]>>();
   hmg: HMG | null = null;
   info: any = null;
 
@@ -30,16 +34,33 @@ export class TextureAsset extends Asset {
     const textureGroup = this.info.parent;
     if (textureGroup.atlasMode) {
       if (!textureGroup.atlasTexturesCache) {
-        const base = textureGroup.atlasCachePath;
-        const configPath = `${base}/atlas.json`;
-        const data = await this.eastward.loadJSONFile(configPath);
-        const atlasTexturesCache = [];
-        for (const atlasInfo of data.atlases) {
-          const texpath = atlasInfo.name;
-          const pixmap = await this.eastward.loadFile(`${base}/${texpath}`);
-          atlasTexturesCache.push(pixmap && decodeHMG(pixmap));
+        let pending = TextureAsset.atlasLoads.get(textureGroup);
+        if (!pending) {
+          pending = (async () => {
+            const base = textureGroup.atlasCachePath;
+            const data = await this.eastward.loadJSONFile(`${base}/atlas.json`);
+            if (!data?.atlases) {
+              throw new Error("Missing texture atlas index: " + base);
+            }
+            const images: HMG[] = [];
+            for (const atlasInfo of data.atlases) {
+              const pixmap = await this.eastward.loadFile(
+                `${base}/${atlasInfo.name}`,
+              );
+              if (!pixmap) {
+                throw new Error("Missing texture atlas: " + atlasInfo.name);
+              }
+              images.push(decodeHMG(pixmap));
+            }
+            return images;
+          })();
+          TextureAsset.atlasLoads.set(textureGroup, pending);
         }
-        textureGroup.atlasTexturesCache = atlasTexturesCache;
+        try {
+          textureGroup.atlasTexturesCache = await pending;
+        } finally {
+          TextureAsset.atlasLoads.delete(textureGroup);
+        }
       }
       const atlasId = this.info.atlasId;
       atlasInfo.x = Number(this.info.x);
@@ -49,7 +70,7 @@ export class TextureAsset extends Asset {
       this.hmg = textureGroup.atlasTexturesCache[atlasId - 1];
     } else {
       const pixmap = await this.eastward.loadFile(
-        this.node.objectFiles!.pixmap
+        this.node.objectFiles!.pixmap,
       );
       if (pixmap) {
         this.hmg = decodeHMG(pixmap);
@@ -106,26 +127,45 @@ export class TextureAsset extends Asset {
     await fs.writeFile(filePath, data);
   }
 
+  /** Editable PNG pixels use straight alpha; the cached atlas stays untouched. */
+  toSourceImage(): HMG {
+    if (!this.hmg) {
+      throw new Error("Missing texture pixels: " + this.node.path);
+    }
+    const image = { ...this.hmg, data: new Uint8Array(this.hmg.data) };
+    if (this.info?.parent?.premultiplyAlpha) {
+      for (let i = 0; i < image.data.length; i += 4) {
+        const alpha = image.data[i + 3];
+        for (let c = 0; c < 3; c++) {
+          image.data[i + c] = alpha
+            ? Math.min(255, Math.round((image.data[i + c] * 255) / alpha))
+            : 0;
+        }
+      }
+    }
+    return image;
+  }
+
   saveFileSync(filePath: string) {
     if (!this.hmg) {
       return;
     }
     super.beforeSave(filePath);
-    const { width, height, data } = this.hmg;
+    writeFileSync(filePath, hmg2pngSync(this.toSourceImage()));
   }
 
   async toPNG() {
     if (!this.hmg) {
       return null;
     }
-    return await hmg2png(this.hmg);
+    return await hmg2png(this.toSourceImage());
   }
 
   toBMP() {
     if (!this.hmg) {
       return null;
     }
-    const { width, height, data: raw } = this.hmg;
+    const { width, height, data: raw } = this.toSourceImage();
     const fileHeaderSize = 14;
     const dibHeaderSize = 40;
     const headerSize = fileHeaderSize + dibHeaderSize;
@@ -245,7 +285,7 @@ export class MultiTextureAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -253,7 +293,7 @@ export class MultiTextureAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -261,42 +301,77 @@ export class MultiTextureAsset extends Asset {
   }
 }
 
+/** A PSD layer package: the deployed images live in its texture children. */
 export class TexturePackAsset extends Asset {
-  constructor(eastward: Eastward, node: AssetNode) {
-    super(eastward, node);
-  }
+  textures: TextureAsset[] = [];
 
   get type(): string {
-    return Asset.Type.None;
+    return Asset.Type.JSON;
   }
 
-  async toString(): Promise<string | null> {
-    return null;
+  async toString(): Promise<string> {
+    return JSON.stringify(
+      this.textures.map((texture) => ({
+        name: texture.node.name,
+        path: texture.node.path,
+      })),
+    );
   }
 
-  async load() {}
+  async load() {
+    const textures = await Promise.all(
+      Object.values(this.node.children)
+        .filter((node) => node.type === "texture")
+        .map((node) => this.eastward.loadAsset<TextureAsset>(node.path)),
+    );
+    if (textures.some((texture) => texture === null)) {
+      throw new Error("Missing texture pack child: " + this.node.path);
+    }
+    this.textures = textures as TextureAsset[];
+  }
 
-  async saveFile(filePath: string) {}
+  private toPSD(): Uint8Array {
+    if (!this.textures.length) {
+      throw new Error("No texture pack children");
+    }
+    return layersToPSD(
+      this.textures.map((texture) => ({
+        name: texture.node.name,
+        image: texture.toSourceImage(),
+      })),
+    );
+  }
 
-  saveFileSync(filePath: string) {}
+  async saveFile(filePath: string) {
+    if (/\.psd$/i.test(filePath)) {
+      const bytes = this.toPSD();
+      this.beforeSave(filePath);
+      await fs.writeFile(filePath, bytes);
+      return;
+    }
+    await fs.mkdir(filePath, { recursive: true });
+    for (const texture of this.textures) {
+      const output = resolveWithin(filePath, texture.node.name + ".png");
+      this.beforeSave(output);
+      await fs.writeFile(output, await hmg2png(texture.toSourceImage()));
+    }
+  }
+
+  saveFileSync(filePath: string) {
+    if (/\.psd$/i.test(filePath)) {
+      const bytes = this.toPSD();
+      this.beforeSave(filePath);
+      writeFileSync(filePath, bytes);
+      return;
+    }
+    mkdirSync(filePath, { recursive: true });
+    for (const texture of this.textures) {
+      const output = resolveWithin(filePath, texture.node.name + ".png");
+      this.beforeSave(output);
+      writeFileSync(output, hmg2pngSync(texture.toSourceImage()));
+    }
+  }
 }
 
-export class TextureProcessorAsset extends Asset {
-  constructor(eastward: Eastward, node: AssetNode) {
-    super(eastward, node);
-  }
-
-  get type(): string {
-    return Asset.Type.None;
-  }
-
-  async toString(): Promise<string | null> {
-    return null;
-  }
-
-  async load() {}
-
-  async saveFile(filePath: string) {}
-
-  saveFileSync(filePath: string) {}
-}
+/** Editor-only Python source, preserved as bytes when a source is supplied. */
+export class TextureProcessorAsset extends FileAsset {}

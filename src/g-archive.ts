@@ -1,6 +1,6 @@
 import { LOG_LEVEL } from "#eastward";
 import { Buffer as BufferWrapper } from "./buffer";
-import { exists, readFile } from "#util/filesystem";
+import { exists, readFile, resolveWithin } from "#util/filesystem";
 import { zstdCompress, zstdDecompress } from "node:zlib";
 import { promisify } from "node:util";
 import { createWriteStream, WriteStream } from "node:fs";
@@ -24,7 +24,7 @@ type Config = {
 
 export class GArchive {
   config;
-  assets: { [key: string]: File } = {};
+  assets: { [key: string]: File } = Object.create(null);
   filePaths: string[] = [];
   loaded = false;
   private loading: Promise<void> | null = null;
@@ -52,8 +52,11 @@ export class GArchive {
         this.loaded = true;
       })();
     }
-    try { await this.loading; }
-    finally { this.loading = null; }
+    try {
+      await this.loading;
+    } finally {
+      this.loading = null;
+    }
   }
 
   async load(filePath: string) {
@@ -64,12 +67,24 @@ export class GArchive {
     }
 
     const length = buffer.readInt32();
+    if (length < 0 || length > Math.floor((buffer.raw.length - 8) / 17))
+      throw new Error("Invalid archive entry count");
     for (let i = 0; i < length; i++) {
       const name = buffer.readZString();
       const offset = buffer.readInt32();
-      const isCompressed = buffer.readInt32() == 2;
+      const compression = buffer.readInt32();
+      if (compression !== 0 && compression !== 2)
+        throw new Error("Unsupported archive compression: " + compression);
+      const isCompressed = compression === 2;
       const decompressedSize = buffer.readInt32();
       const compressedSize = buffer.readInt32();
+      if (
+        offset < 0 ||
+        decompressedSize < 0 ||
+        compressedSize < 0 ||
+        offset > buffer.raw.length - compressedSize
+      )
+        throw new Error("Invalid archive file bounds: " + name);
       const data = buffer.raw.subarray(offset, offset + compressedSize);
 
       this.assets[name] = {
@@ -95,9 +110,10 @@ export class GArchive {
     }
 
     const fileNames = await this.getFileNames();
+    const prefix = dirName.replace(/\/+$/, "") + "/";
     return fileNames
-      .filter((fileName) => fileName.startsWith(dirName))
-      .map((dir) => path.relative(dirName, dir).replace(/\\/g, "/"));
+      .filter((fileName) => !dirName || fileName.startsWith(prefix))
+      .map((fileName) => (dirName ? fileName.slice(prefix.length) : fileName));
   }
 
   async checkFileData(name: string) {
@@ -123,6 +139,8 @@ export class GArchive {
       if (!(decompressed instanceof Uint8Array)) {
         throw new TypeError("Zstandard decompression returned invalid data");
       }
+      if (decompressed.byteLength !== assets.decompressedSize)
+        throw new Error("Archive decompressed size mismatch: " + name);
       assets.isCompressed = false;
       assets.data = decompressed;
     }
@@ -158,7 +176,7 @@ export class GArchive {
 
     const write = (
       stream: WriteStream,
-      chunk: string | Buffer | Uint8Array
+      chunk: string | Buffer | Uint8Array,
     ) => {
       return new Promise<void>((resolve, reject) => {
         stream.write(chunk, (err) => {
@@ -171,7 +189,9 @@ export class GArchive {
       });
     };
 
-    let offset = Object.values(this.assets)
+    // Saving must not replace live asset payloads while readers use them.
+    const assets = Object.values(this.assets).map((asset) => ({ ...asset }));
+    let offset = assets
       .map((asset) => Buffer.byteLength(asset.name, "utf8") + 1 + 16)
       .reduce((a, b) => a + b, 8);
 
@@ -183,10 +203,10 @@ export class GArchive {
       await write(stream, new Uint8Array(Uint32Array.from([27191]).buffer));
       await write(
         stream,
-        new Uint8Array(Uint32Array.from([Object.keys(this.assets).length]).buffer)
+        new Uint8Array(Uint32Array.from([assets.length]).buffer),
       );
 
-      for (const asset of Object.values(this.assets)) {
+      for (const asset of assets) {
         const { name, isCompressed, decompressedSize } = asset;
         if (!isCompressed) {
           const compressed = await compress(Buffer.from(asset.data));
@@ -207,14 +227,14 @@ export class GArchive {
               2,
               decompressedSize,
               asset.data.byteLength,
-            ]).buffer
-          )
+            ]).buffer,
+          ),
         );
 
         offset += asset.data.byteLength;
       }
 
-      for (const asset of Object.values(this.assets)) {
+      for (const asset of assets) {
         const { name, data } = asset;
         if (verbose >= LOG_LEVEL.INFO) {
           console.error(name);
@@ -236,27 +256,34 @@ export class GArchive {
     }
 
     const { verbose } = this.config;
+    const report = {
+      saved: 0,
+      errors: [] as { path: string; error: string }[],
+    };
 
     for (const fileName of await this.getFileNames()) {
       try {
         const data = await this.getFileData(fileName);
         if (data) {
-          const filePath = path.join(dst, fileName);
+          const filePath = resolveWithin(dst, fileName);
           const dirName = path.dirname(filePath);
           if (!(await exists(dirName))) {
             await mkdir(dirName, { recursive: true });
           }
           await writeFile(filePath, data);
+          report.saved++;
           if (verbose >= LOG_LEVEL.INFO) {
             console.info(fileName);
           }
         }
       } catch (err) {
         const e = err as Error;
+        report.errors.push({ path: fileName, error: e.message });
         if (verbose >= LOG_LEVEL.ERROR) {
           console.error(`Error at ${fileName}: ${e.message}`);
         }
       }
     }
+    return report;
   }
 }

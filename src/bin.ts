@@ -12,7 +12,15 @@ function help() {
   console.log("Usage: eastward [MODE] [OPTION]... [FILE]...");
   console.log("Mode and Option:");
   console.log(
-    "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted."
+    "\texport-project\tRecover logical assets, original indexes and runtime resource files.",
+  );
+  console.log("\t\t--root <game> --out <new-directory> [-T <type>]");
+  console.log(
+    "\trestore-project\tRestore source paths using existing asset loaders.",
+  );
+  console.log("\t\t--root <game> --out <new-directory> [-T <type>]");
+  console.log(
+    "\textract\t\tExtract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted.",
   );
   console.log("\t\t--root\t\tgame root directory");
   console.log("\t\t-T, --type\tasset type; eastward --help type to get list");
@@ -23,7 +31,7 @@ function help() {
   console.log("\t\t[FILE]\t\t.g files");
 
   console.log(
-    "\tzip\t\tArchive all data from root directory to output .g file."
+    "\tzip\t\tArchive all data from root directory to output .g file.",
   );
   console.log("\t\t--root\t\troot directory");
   console.log("\t\t--out\t\toutput .g file");
@@ -96,6 +104,49 @@ async function main() {
     const verbose = args["--verbose"] ?? LOG_LEVEL.ERROR;
 
     switch (mode) {
+      case "restore-project": {
+        if (!values.root || !values.out)
+          throw new Error("Required options: --root and --out");
+        const game = new Eastward({ root: values.root, verbose });
+        await game.init();
+        const assetPaths = values.type?.length
+          ? Object.values(game.nodes)
+              .filter((n) => values.type!.includes(n.type))
+              .map((n) => n.path)
+          : undefined;
+        if (assetPaths?.length === 0)
+          throw new Error("No assets match the requested types");
+        const report = await game.exportSourceProject(values.out, {
+          assetPaths,
+        });
+        console.log(
+          `Restored ${Object.keys(report.restored).length} source assets; ${Object.keys(report.unavailable).length} unavailable; ${report.virtualAssets} virtual assets remain in their parent assets.`,
+        );
+        break;
+      }
+      case "export-project": {
+        if (!values.root || !values.out)
+          throw new Error("Required options: --root and --out");
+        const game = new Eastward({ root: values.root, verbose });
+        await game.init();
+        const assetPaths = values.type?.length
+          ? Object.values(game.nodes)
+              .filter((n) => values.type!.includes(n.type))
+              .map((n) => n.path)
+          : undefined;
+        if (assetPaths?.length === 0)
+          throw new Error("No assets match the requested types");
+        const report = await game.exportProject(values.out, { assetPaths });
+        console.log(
+          `Recovered ${report.assetCount} assets and ${report.resourceCount} resource files; ${report.reconstructedCount} assets have editable outputs, ${report.missingResources.length} missing references, ${Object.keys(report.reconstructionErrors).length} assets with reconstruction errors.`,
+        );
+        if (
+          report.missingResources.length ||
+          Object.keys(report.reconstructionErrors).length
+        )
+          process.exitCode = 1;
+        break;
+      }
       case "extract":
         {
           const root = args["--root"];
@@ -117,7 +168,8 @@ async function main() {
             types.forEach((type) => register(eastward, type as AssetType));
           }
 
-          await eastward.extractTo(out, ...types);
+          const report = await eastward.extractTo(out, ...types);
+          if (report.errors.length) process.exitCode = 1;
         }
         break;
 
@@ -132,7 +184,8 @@ async function main() {
             const dir = path.parse(file).name;
             const archive = new GArchive({ verbose });
             await archive.load(file);
-            await archive.extracTo(path.join(out, dir));
+            const report = await archive.extracTo(path.join(out, dir));
+            if (report.errors.length) process.exitCode = 1;
           }
         }
         break;
@@ -156,7 +209,7 @@ async function main() {
               const data = await readFile(file);
               await archive.setFileData(
                 path.relative(root, file).replace(/\\/g, "/"),
-                data
+                data,
               );
               if (verbose >= LOG_LEVEL.INFO) {
                 console.info(file);
@@ -166,6 +219,7 @@ async function main() {
               if (verbose >= LOG_LEVEL.ERROR) {
                 console.error(`Error at ${file}: ${e.message}`);
               }
+              throw err;
             }
           }
 
@@ -200,6 +254,7 @@ async function main() {
                 if (verbose >= LOG_LEVEL.ERROR) {
                   console.error(`Error at ${file}: ${e.message}`);
                 }
+                process.exitCode = 1;
               }
             }
           } else {
@@ -238,11 +293,13 @@ async function main() {
                 if (verbose >= LOG_LEVEL.ERROR) {
                   console.error(`Error at ${file}: ${e.message}`);
                 }
+                process.exitCode = 1;
               }
             }
           } else {
             const data = await readFile(inPath);
             const png = encodeHMG(await png2hmg(data));
+            await mkdir(dirname(out));
             await writeFile(out, png);
           }
         }
@@ -276,11 +333,13 @@ async function main() {
                 if (verbose >= LOG_LEVEL.ERROR) {
                   console.error(`Error at ${file}: ${e.message}`);
                 }
+                process.exitCode = 1;
               }
             }
           } else {
             const data = await readFile(inPath);
             const msg = encode(JSON.parse(new TextDecoder().decode(data)));
+            await mkdir(dirname(out));
             await writeFile(out, msg);
           }
         }
@@ -316,11 +375,13 @@ async function main() {
 
       default:
         console.warn(`Unknown mode: ${mode}`);
+        process.exitCode = 1;
         help();
     }
   } catch (err) {
     const e = err as Error;
     console.error(e.message);
+    process.exitCode = 1;
   }
 }
 

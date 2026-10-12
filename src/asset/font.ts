@@ -24,7 +24,7 @@ export class BMFontAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.fnt) {
+    if (this.fnt == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -32,7 +32,7 @@ export class BMFontAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.fnt) {
+    if (this.fnt == null) {
       return;
     }
     super.beforeSave(filePath);

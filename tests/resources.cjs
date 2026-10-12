@@ -50,7 +50,7 @@ test('sprite WebP durations convert source seconds to milliseconds', async () =>
   };
   const asset = new MSpriteAsset({
     loadJSONFile: async () => definition,
-    loadAsset: async () => ({ hmg: { width: 1, height: 1, data: new Uint8Array([255, 0, 0, 255]) } }),
+    loadAsset: async () => ({ toSourceImage: () => ({ width: 1, height: 1, data: new Uint8Array([255, 0, 0, 255]) }) }),
   }, node);
   await asset.load();
   const image = new WebP.Image();

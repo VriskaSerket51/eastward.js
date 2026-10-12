@@ -23,7 +23,7 @@ export class BTScriptAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +31,7 @@ export class BTScriptAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -56,12 +56,12 @@ export class COMScriptAsset extends Asset {
 
   async load() {
     this.script = await this.eastward.loadTextFile(
-      this.node.objectFiles!.script
+      this.node.objectFiles!.script,
     );
   }
 
   async saveFile(filePath: string) {
-    if (!this.script) {
+    if (this.script == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -69,7 +69,7 @@ export class COMScriptAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.script) {
+    if (this.script == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -97,7 +97,7 @@ export class ShaderScriptAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.src) {
+    if (this.src == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -105,7 +105,7 @@ export class ShaderScriptAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.src) {
+    if (this.src == null) {
       return;
     }
     super.beforeSave(filePath);

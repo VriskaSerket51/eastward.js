@@ -34,17 +34,30 @@ export class LocalePackAsset extends Asset {
     this.langs = [];
     this.data = {};
     this.config = await this.eastward.loadJSONFile(
-      this.node.objectFiles!.config
+      this.node.objectFiles!.config,
     );
-    const available = await this.eastward.loadDirectory(this.node.objectFiles!.data);
-    const langs = [...new Set([
-      this.config?.source_locale,
-      ...(available || []).filter(name => name && !name.includes("/")),
-      "en", "ko", "de", "es", "fr", "zh-TW", "zh-CN", "ja",
-    ].filter((lang): lang is string => Boolean(lang)))];
+    const available = await this.eastward.loadDirectory(
+      this.node.objectFiles!.data,
+    );
+    const langs = [
+      ...new Set(
+        [
+          this.config?.source_locale,
+          ...(available || []).filter((name) => name && !name.includes("/")),
+          "en",
+          "ko",
+          "de",
+          "es",
+          "fr",
+          "zh-TW",
+          "zh-CN",
+          "ja",
+        ].filter((lang): lang is string => Boolean(lang)),
+      ),
+    ];
     for (const lang of langs) {
       const luaData = await this.eastward.loadTextFile(
-        `${this.node.objectFiles!.data}/${lang}`
+        `${this.node.objectFiles!.data}/${lang}`,
       );
       if (!luaData) {
         continue;
@@ -70,7 +83,7 @@ export class LocalePackAsset extends Asset {
     }
 
     const item = this.config.items.find(
-      ({ path: itemPath }) => itemPath == path
+      ({ path: itemPath }) => itemPath == path,
     );
 
     return item ? item.name : null;
@@ -81,13 +94,14 @@ export class LocalePackAsset extends Asset {
       return null;
     }
 
-    return this.data[lang][name];
+    return this.data[lang]?.[name] ?? null;
   }
 
   async saveFile(filePath: string) {
     if (!this.config || !this.data) {
       return;
     }
+    await fs.mkdir(path.join(filePath, "templates"), { recursive: true });
 
     this.langs.forEach((lang) => {
       super.beforeSave(path.join(filePath, "locales", lang, "template"));
@@ -97,7 +111,7 @@ export class LocalePackAsset extends Asset {
     const data = this.data;
     await fs.writeFile(
       path.join(filePath, "locale_pack.json"),
-      JSON.stringify(config, null, 2)
+      JSON.stringify(config, null, 2),
     );
 
     for (const lang in data) {
@@ -109,8 +123,13 @@ export class LocalePackAsset extends Asset {
 
         await fs.writeFile(
           path.join(filePath, "locales", lang, `${name}.po`),
-          po
+          po,
         );
+        if (lang === config.source_locale)
+          await fs.writeFile(
+            path.join(filePath, "templates", `${name}.pot`),
+            po,
+          );
       }
     }
   }

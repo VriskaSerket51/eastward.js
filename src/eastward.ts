@@ -8,11 +8,18 @@ import {
   isFile,
   readDirectory,
   readFile,
+  resolveWithin,
 } from "#util/filesystem";
 import path from "node:path";
 import { LuaObject } from "#type";
 import { readdir } from "node:fs/promises";
 import { AssetType } from "./util/register";
+import {
+  exportProject,
+  exportSourceProject,
+  type ProjectExportOptions,
+  type SourceProjectOptions,
+} from "#project";
 
 type AssetIndex = {
   type: string;
@@ -45,10 +52,10 @@ export type Config = {
 
 export class Eastward {
   config;
-  archives: { [key: string]: GArchive } = {};
-  nodes: { [key: string]: AssetNode } = {};
-  assetLoaders: { [key: string]: AssetLoader } = {};
-  scriptLibrary: { [key: string]: string } = {};
+  archives: { [key: string]: GArchive } = Object.create(null);
+  nodes: { [key: string]: AssetNode } = Object.create(null);
+  assetLoaders: { [key: string]: AssetLoader } = Object.create(null);
+  scriptLibrary: { [key: string]: string } = Object.create(null);
   textureLibrary: any = {};
   private pendingAssets = new Map<string, Promise<Asset>>();
 
@@ -117,6 +124,17 @@ export class Eastward {
     return null;
   }
 
+  async exportProject(destination: string, options?: ProjectExportOptions) {
+    return exportProject(this, destination, options);
+  }
+
+  async exportSourceProject(
+    destination: string,
+    options?: SourceProjectOptions,
+  ) {
+    return exportSourceProject(this, destination, options);
+  }
+
   private _skipEmptyTable(obj: LuaObject) {
     if (!obj) {
       return null;
@@ -128,7 +146,7 @@ export class Eastward {
   }
 
   private _affirmAssetNode(path: string) {
-    return this.nodes[path] || new AssetNode(path);
+    return this.nodes[path] ?? (this.nodes[path] = new AssetNode(path));
   }
 
   private async _loadAssetLibrary(indexPath: string) {
@@ -209,10 +227,14 @@ export class Eastward {
     this.textureLibrary.textureMap = textureMap;
   }
 
-  async loadDirectory(dirPath: string) {
+  async loadDirectory(dirPath?: string) {
+    if (!dirPath) return null;
     const { root } = this.config;
 
-    const physicalPath = path.join(root, "content", "game", dirPath);
+    const physicalPath = resolveWithin(
+      path.join(root, "content", "game"),
+      dirPath,
+    );
     if (await isDir(physicalPath)) {
       return await readDirectory(physicalPath);
     }
@@ -224,10 +246,14 @@ export class Eastward {
     return await this.archives[archive].getDirectoryData(virtualPath);
   }
 
-  async checkFileExists(filePath: string) {
+  async checkFileExists(filePath?: string) {
+    if (!filePath) return false;
     const { root } = this.config;
 
-    const physicalPath = path.join(root, "content", "game", filePath);
+    const physicalPath = resolveWithin(
+      path.join(root, "content", "game"),
+      filePath,
+    );
     if (await isFile(physicalPath)) {
       return true;
     }
@@ -239,10 +265,14 @@ export class Eastward {
     return await this.archives[archive].checkFileData(virtualPath);
   }
 
-  async loadFile(filePath: string): Promise<Uint8Array | null> {
+  async loadFile(filePath?: string): Promise<Uint8Array | null> {
+    if (!filePath) return null;
     const { root } = this.config;
 
-    const physicalPath = path.join(root, "content", "game", filePath);
+    const physicalPath = resolveWithin(
+      path.join(root, "content", "game"),
+      filePath,
+    );
     if (await isFile(physicalPath)) {
       return await readFile(physicalPath);
     }
@@ -254,7 +284,7 @@ export class Eastward {
     return await this.archives[archive].getFileData(virtualPath);
   }
 
-  async loadMsgPackFile(filePath: string) {
+  async loadMsgPackFile(filePath?: string) {
     const data = await this.loadFile(filePath);
     if (!data) {
       return null;
@@ -262,7 +292,7 @@ export class Eastward {
     return decode(data) as any;
   }
 
-  async loadJSONFile(filePath: string) {
+  async loadJSONFile(filePath?: string) {
     const data = await this.loadTextFile(filePath);
     if (!data) {
       return null;
@@ -270,7 +300,7 @@ export class Eastward {
     return JSON.parse(data);
   }
 
-  async loadTextFile(filePath: string) {
+  async loadTextFile(filePath?: string) {
     const data = await this.loadFile(filePath);
     if (!data) {
       return null;
@@ -315,8 +345,11 @@ export class Eastward {
       })();
       this.pendingAssets.set(path, pending);
     }
-    try { return await pending as T; }
-    finally { this.pendingAssets.delete(path); }
+    try {
+      return (await pending) as T;
+    } finally {
+      this.pendingAssets.delete(path);
+    }
   }
 
   findScript(path: string) {
@@ -344,7 +377,8 @@ export class Eastward {
 
   getAssetNodes(type?: AssetType) {
     return Object.values(this.nodes).filter(
-      (node) => typeof node.filePath == "string" && (!type || node.type == type)
+      (node) =>
+        typeof node.filePath == "string" && (!type || node.type == type),
     );
   }
 
@@ -352,7 +386,7 @@ export class Eastward {
     return Object.values(this.nodes).filter(
       (node) =>
         typeof node.filePath == "string" &&
-        types.includes(node.type as AssetType)
+        types.includes(node.type as AssetType),
     );
   }
 
@@ -360,12 +394,17 @@ export class Eastward {
     return Object.values(this.nodes).filter(
       (node) =>
         typeof node.filePath == "string" &&
-        !types.includes(node.type as AssetType)
+        !types.includes(node.type as AssetType),
     );
   }
 
   async extractTo(dst: string, ...types: AssetType[]) {
     const { verbose } = this.config;
+    const report = {
+      saved: 0,
+      skipped: 0,
+      errors: [] as { path: string; error: string }[],
+    };
 
     const nodes =
       types && types.length > 0
@@ -375,19 +414,28 @@ export class Eastward {
     for (const node of nodes) {
       try {
         const asset = await this.loadAsset(node.path);
-        if (asset && typeof node.filePath == "string") {
-          const dstPath = path.join(dst, node.filePath);
+        if (
+          asset &&
+          asset.type !== Asset.Type.None &&
+          typeof node.filePath == "string"
+        ) {
+          const dstPath = resolveWithin(dst, node.filePath);
           await asset.saveFile(dstPath);
+          if (!(await exists(dstPath)))
+            throw new Error("Asset did not produce an output");
+          report.saved++;
           if (verbose >= LOG_LEVEL.INFO) {
             console.info(node.filePath);
           }
-        }
+        } else report.skipped++;
       } catch (err) {
         const e = err as Error;
+        report.errors.push({ path: node.path, error: e.message });
         if (verbose >= LOG_LEVEL.ERROR) {
           console.error(`Error at ${node.path}: ${e.message}`);
         }
       }
     }
+    return report;
   }
 }

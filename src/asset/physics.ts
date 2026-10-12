@@ -23,7 +23,7 @@ export class PhysicsBodyDefAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +31,7 @@ export class PhysicsBodyDefAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -59,7 +59,7 @@ export class PhysicsMaterialAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -67,7 +67,7 @@ export class PhysicsMaterialAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);

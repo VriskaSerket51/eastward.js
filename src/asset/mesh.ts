@@ -24,7 +24,7 @@ export class MeshAsset extends Asset {
 
   async load() {
     const meshXml = await this.eastward.loadTextFile(
-      `${this.node.objectFiles!.mesh}/mesh`
+      `${this.node.objectFiles!.mesh}/mesh`,
     );
     if (!meshXml) {
       return;
@@ -43,12 +43,13 @@ export class MeshAsset extends Asset {
     const mtlOp = fs.writeFile(path.join(filePath, "output.mtl"), mtl);
     const texOp = tex.map(async (tex) => {
       const texture = await this.eastward.loadFile(
-        `${this.node.objectFiles!.mesh}/${tex}`
+        `${this.node.objectFiles!.mesh}/${tex}`,
       );
       if (texture) {
+        super.beforeSave(path.join(filePath, tex));
         await fs.writeFile(path.join(filePath, tex), texture);
       }
     });
-    await Promise.allSettled([objOp, mtlOp, ...texOp]);
+    await Promise.all([objOp, mtlOp, ...texOp]);
   }
 }

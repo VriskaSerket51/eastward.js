@@ -1,5 +1,13 @@
 export { Eastward, LOG_LEVEL } from "#eastward";
 export { GArchive } from "#g-archive";
+export {
+  exportProject,
+  exportSourceProject,
+  projectAssetPath,
+  projectAssetPaths,
+  type ProjectExportOptions,
+  type SourceProjectOptions,
+} from "#project";
 
 export * from "#asset/node";
 
@@ -9,6 +17,7 @@ export * from "#asset/data";
 export * from "#asset/deck-2d";
 export * from "#asset/effect";
 export * from "#asset/file";
+export * from "#asset/fmod";
 export * from "#asset/font";
 export * from "#asset/glsl";
 export * from "#asset/locale";

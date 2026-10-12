@@ -23,7 +23,7 @@ export class SQScriptAsset extends Asset {
 
   async load() {
     let data = await this.eastward.loadMsgPackFile(
-      this.node.objectFiles!.packed_data
+      this.node.objectFiles!.packed_data,
     );
     if (!data) {
       data = await this.eastward.loadJSONFile(this.node.objectFiles!.data);
@@ -43,6 +43,7 @@ export class SQScriptAsset extends Asset {
     await fs.writeFile(filePath, decompileSQ(this.raw));
   }
 
+  /** Exports a dialogue outline; this does not rebuild engine SQ bytecode. */
   async saveBuildFile(filePath: string) {
     if (!this.root) {
       return;

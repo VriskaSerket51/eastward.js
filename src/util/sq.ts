@@ -36,17 +36,23 @@ function decompileSQNode(node: any, indentLevel: number) {
       break;
 
     case "action":
-      if (node.lineCount > 1) {
-        output += `${indent}${node.sub ? "." : ""}${node.name}`;
+      if (
+        !["if", "elseif", "else", "switch", "case", "default"].includes(
+          node.name,
+        ) &&
+        (node.lineCount > 1 || node.args?.some((arg: string) => /\s/.test(arg)))
+      ) {
+        output += `${indent}${node.name}:`;
         if (node.args && node.args.length > 0) {
-          output += ` ${node.args[0]}`;
+          output += node.args[0];
         }
-        output += ":\n";
+        output += "\n";
+        if (node.args?.[0] === "") output += `${indent}\t//\n`;
         for (let i = 1; i < node.args.length; i++) {
-          output += `${indent}\t${node.args[i]}\n`;
+          output += `${indent}\t${node.args[i]}${node.args[i].trim() ? "" : "//"}\n`;
         }
       } else {
-        output += `${indent}${node.sub ? "." : ""}${node.name}`;
+        output += `${indent}${node.name}`;
         if (node.args && node.args.length > 0) {
           output += ` ${node.args.join(" ")}`;
         }
@@ -59,8 +65,8 @@ function decompileSQNode(node: any, indentLevel: number) {
   }
 
   if (node.inlineDirectives && node.inlineDirectives.length > 0) {
-    output = output.trimEnd();
-    output += " //";
+    output = output.replace(/\n$/, "");
+    output += "//";
     node.inlineDirectives.forEach((inlineDirective: any) => {
       output += `$${inlineDirective.name}`;
       if (inlineDirective.value) {
@@ -98,18 +104,15 @@ async function translateSQ(
   eastward: Eastward,
   path: string,
   data: any,
-  lang: string
+  lang: string,
 ) {
   await init(eastward);
-  const translation = translateAsset(path, lang);
+  const translation = translateAsset(path, lang, eastward);
+  if (!translation) return data;
 
   function helper(node: any, directives: string[]) {
     if (node.type == "action") {
-      if (
-        node.name == "say" ||
-        node.name == "shout" ||
-        node.name == "emo"
-      ) {
+      if (node.name == "say" || node.name == "shout" || node.name == "emo") {
         const directive = directives.pop();
         if (directive) {
           directives.push(directive);

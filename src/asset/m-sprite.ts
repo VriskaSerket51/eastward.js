@@ -79,8 +79,15 @@ export class MSpriteAsset extends Asset {
     if (!def) {
       def = await this.eastward.loadJSONFile(this.node.objectFiles!.def);
     }
-    if (!def) throw new Error(`invalid msprite definition: ${this.node.path}`);
+    if (!def) {
+      throw new Error(`invalid msprite definition: ${this.node.path}`);
+    }
     this.definition = def;
+    if (Object.keys(def.atlases).length !== 1) {
+      throw new Error(
+        "Multiple sprite atlases require explicit texture mapping",
+      );
+    }
 
     const baseName = path.parse(this.node.name).name;
     const textNodePath = `${this.node.path}/${baseName}_texture`;
@@ -93,6 +100,7 @@ export class MSpriteAsset extends Asset {
     this.animations = {};
     const modules: { [key: string]: HMG } = {};
     const frames: { [key: string]: { hmg: HMG; bound: Rect } } = {};
+    const atlas = texture.toSourceImage();
 
     for (const id in def.modules) {
       const module = def.modules[id];
@@ -104,7 +112,7 @@ export class MSpriteAsset extends Asset {
         h,
       };
 
-      const tex = cropHMG(texture.hmg!, rect);
+      const tex = cropHMG(atlas, rect);
       modules[id] = tex;
     }
 
@@ -120,7 +128,7 @@ export class MSpriteAsset extends Asset {
             w,
             h,
           };
-        })
+        }),
       );
       const base = emptyHMG(bound.w, bound.h);
       for (const part of frame.parts) {
@@ -137,21 +145,33 @@ export class MSpriteAsset extends Asset {
     await WebP.Image.initLib();
     for (const id of Object.keys(def.anims)) {
       const anim = def.anims[id];
+      if (!anim.seq.length) {
+        continue;
+      }
 
       const bound = this._calculateBound(
         anim.seq.map((seq) => {
-          const [id] = seq;
+          const [id, , x = 0, y = 0] = seq;
           const { bound } = frames[id];
-          return bound;
-        })
+          return { ...bound, x: bound.x + x, y: bound.y + y };
+        }),
       );
+      bound.w = Math.max(1, bound.w);
+      bound.h = Math.max(1, bound.h);
 
       const frameData: any[] = [];
-      for (const [id, delay] of anim.seq) {
+      for (const [id, delay, x = 0, y = 0] of anim.seq) {
         const { hmg, bound: frameBound } = frames[id];
 
         const base = emptyHMG(bound.w, bound.h);
-        mergeHMG(base, hmg, frameBound.x - bound.x, frameBound.y - bound.y);
+        if (hmg.width && hmg.height) {
+          mergeHMG(
+            base,
+            hmg,
+            frameBound.x + x - bound.x,
+            frameBound.y + y - bound.y,
+          );
+        }
 
         const frameImage = await WebP.Image.getEmptyImage();
         await frameImage.setImageData(base.data, {
@@ -183,9 +203,9 @@ export class MSpriteAsset extends Asset {
   }
 
   _calculateBound(rectOrRects: Rect | Rect[]): Rect {
-    const rects: Rect[] = Array.isArray(rectOrRects)
-      ? rectOrRects
-      : [rectOrRects];
+    const rects: Rect[] = (
+      Array.isArray(rectOrRects) ? rectOrRects : [rectOrRects]
+    ).filter((rect) => rect.w > 0 && rect.h > 0);
 
     if (rects.length == 0) {
       return {
@@ -237,14 +257,66 @@ export class MSpriteAsset extends Asset {
     }
     super.beforeSave(path.join(filePath, "template"));
     if (this.definition) {
-      await writeFile(path.join(filePath, 'sprite.json'), new TextEncoder().encode(JSON.stringify(this.definition, null, 2)));
+      await writeFile(
+        path.join(filePath, "sprite.json"),
+        new TextEncoder().encode(JSON.stringify(this.definition, null, 2)),
+      );
     }
     for (const name in this.animations) {
       const animation = this.animations[name];
       await writeFile(
         path.join(filePath, `${name.replace(/:/g, "_")}.webp`),
-        animation
+        animation,
       );
     }
+  }
+}
+
+/** Sequence definitions can be inspected without rendering the parent sprite. */
+export class MSpriteSequenceAsset extends Asset {
+  data: any = null;
+
+  get type() {
+    return Asset.Type.JSON;
+  }
+
+  async load() {
+    const parent = this.eastward.getAssetNode(this.node.parent);
+    const files = parent?.objectFiles;
+    let def: MultiSprite | null = files?.packed_def
+      ? await this.eastward.loadMsgPackFile(files.packed_def)
+      : null;
+    if (!def && files?.def) {
+      def = await this.eastward.loadJSONFile(files.def);
+    }
+    const animation =
+      def &&
+      Object.values(def.anims).find((anim) => anim.name === this.node.name);
+    if (!def || !animation) {
+      throw new Error("Sprite sequence not found: " + this.node.path);
+    }
+    this.data = {
+      animation,
+      frames: Object.fromEntries(
+        animation.seq.map(([id]) => [id, def.frames[id]]),
+      ),
+      modules: def.modules,
+      features: def.features,
+    };
+  }
+
+  async toString() {
+    return this.data === null ? null : JSON.stringify(this.data);
+  }
+
+  async saveFile(filePath: string) {
+    if (this.data === null) {
+      return;
+    }
+    this.beforeSave(filePath);
+    await writeFile(
+      filePath,
+      new TextEncoder().encode(JSON.stringify(this.data, null, 2)),
+    );
   }
 }

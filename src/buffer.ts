@@ -9,15 +9,15 @@ export class Buffer {
   }
 
   readBytes(count: number) {
-    const value: number[] = [];
-    for (let i = 0; i < count; i++) {
-      value.push(this.readUInt8());
-    }
-    return value;
+    return Array.from(this.readBytesView(count));
   }
 
   readBytesView(count: number) {
-    if (!Number.isInteger(count) || count < 0 || count > this.raw.byteLength - this.offset) {
+    if (
+      !Number.isInteger(count) ||
+      count < 0 ||
+      count > this.raw.byteLength - this.offset
+    ) {
       throw new RangeError("Byte count exceeds buffer bounds");
     }
     const value = this.raw.subarray(this.offset, this.offset + count);

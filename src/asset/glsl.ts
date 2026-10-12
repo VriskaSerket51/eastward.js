@@ -23,7 +23,7 @@ export class GLSLAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.src) {
+    if (this.src == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +31,7 @@ export class GLSLAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.src) {
+    if (this.src == null) {
       return;
     }
     super.beforeSave(filePath);

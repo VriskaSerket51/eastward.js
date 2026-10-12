@@ -12,11 +12,11 @@ export class MovieAsset extends Asset {
   }
 
   get type(): string {
-    return Asset.Type.Text;
+    return Asset.Type.Binary;
   }
 
   async toString(): Promise<string | null> {
-    if (!this.data) {
+    if (this.data == null) {
       return null;
     }
     return uint8ArrayToBase64(this.data);
@@ -27,7 +27,7 @@ export class MovieAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -35,7 +35,7 @@ export class MovieAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);

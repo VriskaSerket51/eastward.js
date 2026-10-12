@@ -19,11 +19,17 @@ export class TextAsset extends Asset {
   }
 
   async load() {
-    this.data = await this.eastward.loadTextFile(this.node.objectFiles!.data);
+    const ref = this.node.objectFiles?.data;
+    if (!ref)
+      throw new Error(
+        "Text source is absent from the installed asset index: " +
+          this.node.path,
+      );
+    this.data = await this.eastward.loadTextFile(ref);
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -31,7 +37,7 @@ export class TextAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);

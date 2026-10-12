@@ -23,7 +23,7 @@ export class FSMSchemeAsset extends Asset {
     if (!def) {
       return;
     }
-    this.ml =def;
+    this.ml = def;
 
     // const lua = await Lua.create();
     // const value = await lua.doString(def);
@@ -45,7 +45,7 @@ export class FSMSchemeAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.ml) {
+    if (this.ml == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -73,7 +73,7 @@ export class QuestSchemeAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -81,7 +81,7 @@ export class QuestSchemeAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.def) {
+    if (this.def == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -109,7 +109,7 @@ export class TBSchemeAsset extends Asset {
   }
 
   async saveFile(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);
@@ -117,7 +117,7 @@ export class TBSchemeAsset extends Asset {
   }
 
   saveFileSync(filePath: string) {
-    if (!this.data) {
+    if (this.data == null) {
       return;
     }
     super.beforeSave(filePath);

@@ -1,29 +1,41 @@
 import { LocalePackAsset } from "#asset/locale";
 import { Eastward } from "#eastward";
 
-let isInited = false;
-const pathToPack: { [key: string]: LocalePackAsset } = {};
+const states = new WeakMap<
+  Eastward,
+  { packs: Map<string, LocalePackAsset>; pending?: Promise<void> }
+>();
+let activeGame: Eastward | undefined;
 
 export async function init(eastward: Eastward) {
-  if (isInited) {
-    return;
+  activeGame = eastward;
+  let state = states.get(eastward);
+  if (!state) {
+    state = { packs: new Map() };
+    states.set(eastward, state);
+    const packs = state.packs;
+    state.pending = (async () => {
+      for (const node of eastward.getAssetNodes("locale_pack")) {
+        const pack = await eastward.loadAsset<LocalePackAsset>(node.path);
+        if (pack?.config)
+          for (const { path } of pack.config.items) packs.set(path, pack);
+      }
+    })();
   }
-
-  const nodes = eastward.getAssetNodes("locale_pack");
-  for (const node of nodes) {
-    const pack = await eastward.loadAsset<LocalePackAsset>(node.path);
-    if (!pack || !pack.config) {
-      continue;
-    }
-    for (const { name, path } of pack.config.items) {
-      pathToPack[path] = pack;
-    }
+  try {
+    await state.pending;
+  } catch (error) {
+    states.delete(eastward);
+    throw error;
   }
-  isInited = true;
 }
 
-export function translateAsset(path: string, lang: string) {
-  const pack = pathToPack[path];
+export function translateAsset(
+  path: string,
+  lang: string,
+  eastward = activeGame,
+) {
+  const pack = eastward && states.get(eastward)?.packs.get(path);
   if (!pack) {
     return null;
   }

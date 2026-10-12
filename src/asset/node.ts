@@ -15,7 +15,7 @@ export class AssetNode {
   deployMeta: LuaObject | null = null;
   dependency: LuaObject | null = null;
   parentNode: AssetNode | null = null;
-  children: { [key: string]: AssetNode } = {};
+  children: { [key: string]: AssetNode } = Object.create(null);
   cachedAsset: Asset | null = null;
 
   constructor(path: string) {
