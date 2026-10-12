@@ -91,6 +91,11 @@ test("sprite WebP keeps blank frames and straight-alpha color on a stable canvas
   const node = Object.assign(new AssetNode("sprite.msprite"), {
     name: "sprite.msprite",
     objectFiles: { def: "def" },
+    children: {
+      texture: Object.assign(new AssetNode("sprite.msprite/sprite_texture"), {
+        type: "texture",
+      }),
+    },
   });
   const sprite = new MSpriteAsset(
     { loadJSONFile: async () => definition, loadAsset: async () => texture },
@@ -284,4 +289,56 @@ test("saving archives preserves live payloads and round-trips UTF-8 paths and em
   assert.deepEqual([...(await restored.getFileData("한글/file"))], [...data]);
   assert.deepEqual([...(await restored.getFileData("empty"))], []);
   assert.deepEqual([...(await restored.getFileData("__proto__"))], [...data]);
+});
+
+test("sprite WebP composes parts from multiple recorded atlases", async () => {
+  const node = Object.assign(new AssetNode("sprite.msprite"), {
+    name: "sprite.msprite",
+    objectFiles: { def: "def" },
+  });
+  for (const name of ["red", "blue"])
+    node.children[name] = Object.assign(
+      new AssetNode("sprite.msprite/" + name),
+      { name, type: "texture" },
+    );
+  const pixels = { red: [255, 0, 0, 255], blue: [0, 0, 255, 255] };
+  const def = {
+    atlases: { second: "blue.png", first: "red.png" },
+    features: [],
+    modules: {
+      red: { atlas: "first", rect: [0, 0, 1, 1] },
+      blue: { atlas: "second", rect: [0, 0, 1, 1] },
+    },
+    frames: {
+      f: {
+        parts: [
+          ["red", 0, 0],
+          ["blue", 1, 0],
+        ],
+      },
+    },
+    anims: { a: { name: "test", seq: [["f", 0.1, 0, 0]] } },
+  };
+  const sprite = new MSpriteAsset(
+    {
+      loadJSONFile: async () => def,
+      loadAsset: async (name) => ({
+        toSourceImage: () => ({
+          width: 1,
+          height: 1,
+          data: Uint8Array.from(pixels[name.split("/").pop()]),
+        }),
+      }),
+    },
+    node,
+  );
+  await sprite.load();
+  const WebP = require("node-webpmux");
+  const image = new WebP.Image();
+  await image.load(sprite.animations.test);
+  assert.equal(image.width, 2);
+  assert.deepEqual(
+    [...(await image.getFrameData(0))],
+    [...pixels.red, ...pixels.blue],
+  );
 });

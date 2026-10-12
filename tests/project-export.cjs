@@ -121,7 +121,13 @@ test("reconstruction restores straight alpha and editable sprite modules without
     objectFiles: { pixmap: "pixmap" },
   };
   const game = Object.assign(new Eastward({ root: "." }), {
-    nodes: { [node.path]: node },
+    nodes: {
+      [node.path]: node,
+      "anim/Test.msprite": {
+        path: "anim/Test.msprite",
+        children: { texture: node },
+      },
+    },
     loadFile: async (ref) => bytes.get(ref),
     findTexture: () => ({
       ow: 1,

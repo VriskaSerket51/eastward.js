@@ -42,6 +42,7 @@ test('sprite WebP durations convert source seconds to milliseconds', async () =>
   const node = new AssetNode('sprite.msprite');
   node.name = 'sprite.msprite';
   node.objectFiles = { def: 'def' };
+  node.children.texture = Object.assign(new AssetNode('sprite.msprite/sprite_texture'), { type: 'texture' });
   const definition = {
     modules: { m: { atlas: '0', rect: [0, 0, 1, 1], feature: 0 } },
     frames: { f: { parts: [['m', -3, -4]], meta: { origin: [0, 0] } } },

@@ -1,3 +1,4 @@
+import { spriteAtlasPaths, spriteModuleAtlas } from "#util/sprite";
 import { Asset, AssetNode } from "#asset/node";
 import { Eastward } from "#eastward";
 import { TextureAsset } from "./texture";
@@ -83,24 +84,20 @@ export class MSpriteAsset extends Asset {
       throw new Error(`invalid msprite definition: ${this.node.path}`);
     }
     this.definition = def;
-    if (Object.keys(def.atlases).length !== 1) {
-      throw new Error(
-        "Multiple sprite atlases require explicit texture mapping",
-      );
-    }
-
-    const baseName = path.parse(this.node.name).name;
-    const textNodePath = `${this.node.path}/${baseName}_texture`;
-    const texture = await this.eastward.loadAsset<TextureAsset>(textNodePath);
-
-    if (!texture) {
-      throw new Error(`cannot find texture: ${textNodePath}`);
+    const atlases: Record<string, HMG> = Object.create(null);
+    for (const [id, texturePath] of Object.entries(
+      spriteAtlasPaths(this.node, def.atlases),
+    )) {
+      const texture = await this.eastward.loadAsset<TextureAsset>(texturePath);
+      if (!texture) {
+        throw new Error(`cannot find texture: ${texturePath}`);
+      }
+      atlases[id] = texture.toSourceImage();
     }
 
     this.animations = {};
     const modules: { [key: string]: HMG } = {};
     const frames: { [key: string]: { hmg: HMG; bound: Rect } } = {};
-    const atlas = texture.toSourceImage();
 
     for (const id in def.modules) {
       const module = def.modules[id];
@@ -112,7 +109,7 @@ export class MSpriteAsset extends Asset {
         h,
       };
 
-      const tex = cropHMG(atlas, rect);
+      const tex = cropHMG(spriteModuleAtlas(atlases, module.atlas), rect);
       modules[id] = tex;
     }
 

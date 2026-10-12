@@ -342,3 +342,179 @@ test("source export writes Gii deck folders and rewrites source document referen
     /collides/,
   );
 });
+
+test("story graphs preserve node types, empty groups and all connection kinds", async () => {
+  const node = (id, type, text, group = false, children) => ({
+    id,
+    fullId: id,
+    type,
+    text,
+    group,
+    visual: {},
+    ...(children ? { children } : {}),
+  });
+  const data = {
+    rootNodes: [
+      node("group", "GROUP", "", false, [
+        node("a", "ACTION", "a & b", "group"),
+      ]),
+      node("ref", "REF", "reference", false, []),
+    ],
+    edges: ["NORMAL", "NOT", "COMMENT"].map((type, index) => ({
+      src: index === 2 ? "ref" : "a",
+      dst: index === 1 ? "group" : "ref",
+      type,
+      text: "condition " + index,
+      visual: {},
+    })),
+  };
+  const written = new Map();
+  const game = {
+    nodes: { story: { type: "story_graph", objectFiles: { def: "def" } } },
+    loadJSONFile: async () => data,
+  };
+  const { restoreEditableAsset } = require("../dist/project-reconstruct");
+  const result = await restoreEditableAsset(
+    game,
+    "story",
+    "sample.story.graphml",
+    async (name, bytes) => written.set(name, bytes),
+    String,
+    ".",
+  );
+  assert.equal(result.native, true);
+  const graph = Buffer.from(written.get(result.path)).toString();
+  assert.match(graph, /type=ACTION/);
+  assert.match(graph, /a &amp; b/);
+  assert.equal((graph.match(/yfiles.foldertype="group"/g) || []).length, 2);
+  assert.match(graph, /color="#FF0000"/);
+  assert.match(graph, /type="dashed"/);
+  assert.deepEqual(
+    JSON.parse(Buffer.from(written.get(result.path + ".runtime.json"))),
+    data,
+  );
+  const fs = require("node:fs/promises");
+  await fs.mkdir("node_modules/.cache/story-roundtrip", { recursive: true });
+  for (const [name, bytes] of written)
+    await fs.writeFile("node_modules/.cache/story-roundtrip/" + name, bytes);
+  assert.throws(
+    () =>
+      sourceGraphML("story_graph", {
+        ...data,
+        edges: [{ src: "missing", dst: "a", type: "NORMAL" }],
+      }),
+    /endpoint/,
+  );
+});
+
+test("sprite atlas mappings preserve IDs and reject ambiguous or missing references", () => {
+  const {
+    spriteAtlasPaths,
+    spriteModuleAtlas,
+  } = require("../dist/util/sprite");
+  const node = {
+    path: "sprite",
+    children: {
+      first: { type: "texture", path: "sprite/first", name: "first" },
+      second: { type: "texture", path: "sprite/second", name: "second" },
+    },
+  };
+  assert.deepEqual(
+    {
+      ...spriteAtlasPaths(node, {
+        b: "cache/second.png",
+        a: "cache/first.png",
+      }),
+    },
+    { b: "sprite/second", a: "sprite/first" },
+  );
+  assert.throws(
+    () => spriteAtlasPaths(node, { a: "unknown", b: "cache/second.png" }),
+    /ambiguous/,
+  );
+  assert.throws(() => spriteModuleAtlas({ a: {} }, "b"), /Missing/);
+});
+
+test("ASE parts select their recorded atlas instead of the first texture", () => {
+  const images = {
+    a: { width: 1, height: 1, data: Uint8Array.of(255, 0, 0, 255) },
+    b: { width: 1, height: 1, data: Uint8Array.of(0, 0, 255, 255) },
+  };
+  const def = {
+    features: [],
+    modules: {
+      red: { atlas: "a", rect: [0, 0, 1, 1] },
+      blue: { atlas: "b", rect: [0, 0, 1, 1] },
+    },
+    frames: {
+      frame: {
+        parts: [
+          ["red", 0, 0],
+          ["blue", 1, 0],
+        ],
+      },
+    },
+  };
+  const bytes = Buffer.from(
+    animationToASE(def, { seq: [["frame", 0.1]] }, images),
+  );
+  const pixels = [];
+  let offset = 144;
+  while (offset < bytes.length) {
+    const size = bytes.readUInt32LE(offset),
+      type = bytes.readUInt16LE(offset + 4);
+    if (type === 0x2005 && bytes.readUInt16LE(offset + 6) < 2)
+      pixels.push([
+        ...zlib.inflateSync(bytes.subarray(offset + 26, offset + size)),
+      ]);
+    offset += size;
+  }
+  assert.deepEqual(pixels, [
+    [255, 0, 0, 255],
+    [0, 0, 255, 255],
+  ]);
+  assert.throws(
+    () => animationToASE(def, { seq: [["frame", 0.1]] }, { a: images.a }),
+    /Missing sprite module atlas/,
+  );
+});
+
+test("scene prototype references are remapped inside serialized JSON without changing opaque bodies", async () => {
+  const fs = require("node:fs/promises"),
+    path = require("node:path");
+  const { remapSourceFile } = require("../dist/util/source-reference");
+  const directory = await fs.mkdtemp(
+    path.resolve("node_modules/.cache/embedded-proto-"),
+  );
+  try {
+    const source = JSON.stringify({
+      map: { asset: "deck/example.decks.psd/quad" },
+      value: 1,
+    });
+    const opaque = Buffer.from([255, 0, 1]).toString("base64");
+    const malformed = Buffer.from("not json: deck/example.decks.psd").toString(
+      "base64",
+    );
+    const data = {
+      protos: [
+        { name: "sprite", serialized: Buffer.from(source).toString("base64") },
+        { name: "binary", serialized: opaque },
+        { name: "malformed", serialized: malformed },
+      ],
+    };
+    const file = path.join(directory, "default.scene_group");
+    await fs.writeFile(file, JSON.stringify(data));
+    const mapping = { "deck/example.decks.psd": "deck/example.deckpack" };
+    assert.equal(await remapSourceFile(file, mapping), true);
+    const result = JSON.parse(await fs.readFile(file, "utf8"));
+    assert.deepEqual(
+      JSON.parse(Buffer.from(result.protos[0].serialized, "base64")),
+      { map: { asset: "deck/example.deckpack/quad" }, value: 1 },
+    );
+    assert.equal(result.protos[1].serialized, opaque);
+    assert.equal(result.protos[2].serialized, malformed);
+    assert.equal(await remapSourceFile(file, mapping), false);
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});

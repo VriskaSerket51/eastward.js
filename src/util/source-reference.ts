@@ -25,6 +25,51 @@ export function remapSourceReferences(
   );
 }
 
+/** Gii stores embedded scene prototypes as Base64-encoded JSON source. */
+function remapScenePrototypes(
+  text: string,
+  mappings: Record<string, string>,
+): string {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return text;
+    }
+    throw error;
+  }
+  if (!Array.isArray(data?.protos)) {
+    return text;
+  }
+  let changed = false;
+  for (const proto of data.protos) {
+    if (typeof proto?.serialized !== "string") {
+      continue;
+    }
+    const bytes = Buffer.from(proto.serialized, "base64");
+    const source = bytes.toString("utf8");
+    if (!Buffer.from(source).equals(bytes)) {
+      continue;
+    }
+    // Opaque or malformed prototype bodies are preserved, never reinterpreted.
+    try {
+      JSON.parse(source);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        continue;
+      }
+      throw error;
+    }
+    const rewritten = remapSourceReferences(source, mappings);
+    if (rewritten !== source) {
+      proto.serialized = Buffer.from(rewritten).toString("base64");
+      changed = true;
+    }
+  }
+  return changed ? JSON.stringify(data, null, 2) : text;
+}
+
 /** Rewrite references in source documents; binary images and runtime sidecars remain intact. */
 export async function remapSourceFile(
   file: string,
@@ -103,6 +148,8 @@ export async function remapSourceFile(
       ".com_script",
       ".shader_script",
       ".glsl",
+      ".fsh",
+      ".vsh",
       ".ui_style",
       ".render_target",
       ".tb_scheme",
@@ -116,7 +163,10 @@ export async function remapSourceFile(
   if (!Buffer.from(text).equals(raw)) {
     return false;
   }
-  const rewritten = remapSourceReferences(text, mappings);
+  let rewritten = remapSourceReferences(text, mappings);
+  if ([".scene", ".scene_group"].includes(extension)) {
+    rewritten = remapScenePrototypes(rewritten, mappings);
+  }
   if (rewritten === text) {
     return false;
   }

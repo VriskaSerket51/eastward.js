@@ -7,6 +7,7 @@ import { cropHMG, decodeHMG, hmg2png, type HMG } from "#util/hmg";
 import { decode } from "@msgpack/msgpack";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { spriteAtlasPaths, spriteModuleAtlas } from "#util/sprite";
 
 async function loadProjectAsset<T extends Asset>(
   game: Eastward,
@@ -185,17 +186,21 @@ export async function reconstructAsset(
         throw new Error("Missing sprite definition");
       }
       const atlasIds = Object.keys(def.atlases);
-      if (atlasIds.length !== 1) {
-        throw new Error(
-          "Multiple sprite atlases require explicit texture mapping",
-        );
+      const texturePaths = spriteAtlasPaths(game.nodes[logical], def.atlases);
+      const images: Record<string, HMG> = Object.create(null);
+      const atlasFiles: Record<string, string> = Object.create(null);
+      for (const [id, texturePath] of Object.entries(texturePaths)) {
+        images[id] = (await texture(texturePath)).image;
+        atlasFiles[id] =
+          folder +
+          (atlasIds.length === 1
+            ? "/atlas.png"
+            : "/atlases/" + encodeURIComponent(id) + ".png");
+        await png(atlasFiles[id], images[id]);
       }
-      const texturePath =
-        logical + "/" + path.posix.parse(logical).name + "_texture";
-      const { image } = await texture(texturePath);
-      await png(folder + "/atlas.png", image);
       const modules: Record<string, any> = {};
       for (const [id, value] of Object.entries<any>(def.modules)) {
+        const image = spriteModuleAtlas(images, value.atlas);
         const [x, y, w, h] = value.rect;
         if (
           ![x, y, w, h].every(Number.isInteger) ||
@@ -214,9 +219,10 @@ export async function reconstructAsset(
       }
       await json(folder + "/sprite.json", {
         ...def,
-        atlases: { [atlasIds[0]]: folder + "/atlas.png" },
+        atlases: atlasFiles,
         modules,
-        sourceTexture: texturePath,
+        sourceTexture:
+          atlasIds.length === 1 ? texturePaths[atlasIds[0]] : texturePaths,
         sourceDefinition: def,
         timingUnit: "seconds",
         imagePathsRelativeTo: "project-root",
@@ -525,17 +531,13 @@ export async function restoreEditableAsset(
   }
   if (node.type === "msprite") {
     const def = await loadParentDefinition(game, logical);
-    const textureNode = Object.values(node.children).find(
-      (child) => child.type === "texture",
-    );
-    if (!textureNode) {
-      throw new Error("Missing sprite texture node");
+    const atlases: Record<string, HMG> = Object.create(null);
+    for (const [id, texturePath] of Object.entries(
+      spriteAtlasPaths(node, def.atlases),
+    )) {
+      const texture = await loadProjectAsset<TextureAsset>(game, texturePath);
+      atlases[id] = texture.toSourceImage();
     }
-    const texture = await loadProjectAsset<TextureAsset>(
-      game,
-      textureNode.path,
-    );
-    const atlas = texture.toSourceImage();
     let count = 0;
     const animations = Object.values<any>(def.anims);
     for (const anim of animations.filter((a) => !a.name.includes(":"))) {
@@ -573,7 +575,7 @@ export async function restoreEditableAsset(
       }
       await write(
         target + "/" + safeName(anim.name) + ".ase",
-        animationToASE(def, anim, atlas, tags),
+        animationToASE(def, anim, atlases, tags),
       );
       count++;
     }
@@ -592,14 +594,22 @@ export async function restoreEditableAsset(
       throw new Error("No sprite animation frames");
     }
     await json(target + "/runtime-definition.json", def);
-    await write(target + "/atlas.png", await hmg2png(atlas));
+    for (const [id, atlas] of Object.entries(atlases)) {
+      const output =
+        Object.keys(atlases).length === 1
+          ? "/atlas.png"
+          : "/atlases/" + safeName(id) + ".png";
+      await write(target + output, await hmg2png(atlas));
+    }
     return {
       path: target,
       provenance: "reconstructed-ase-parts-and-timing",
       native: true,
     };
   }
-  if (["scene_portal_graph", "quest_scheme"].includes(node.type)) {
+  if (
+    ["scene_portal_graph", "quest_scheme", "story_graph"].includes(node.type)
+  ) {
     const data = await game.loadJSONFile(refs.def);
     if (!data) {
       throw new Error("Missing graph nodes");
@@ -623,31 +633,22 @@ export async function restoreEditableAsset(
         : {}),
     };
   }
-  if (node.type === "fsm_scheme" || node.type === "story_graph") {
+  if (node.type === "fsm_scheme") {
     const bytes = await game.loadFile(refs.def);
     if (!bytes?.length) {
       throw new Error("No usable compiled graph data");
     }
-    if (node.type === "fsm_scheme") {
-      await write(
-        target,
-        new TextEncoder().encode(
-          await sourceFSMGraphML(new TextDecoder().decode(bytes)),
-        ),
-      );
-      await write(target + ".runtime.lua", bytes);
-      return {
-        path: target,
-        provenance: "reconstructed-effective-fsm-graph",
-        native: true,
-      };
-    }
-    const output = target + ".recovered.json";
-    await write(output, bytes);
+    await write(
+      target,
+      new TextEncoder().encode(
+        await sourceFSMGraphML(new TextDecoder().decode(bytes)),
+      ),
+    );
+    await write(target + ".runtime.lua", bytes);
     return {
-      path: output,
-      provenance: "compiled-graph-data-only",
-      native: false,
+      path: target,
+      provenance: "reconstructed-effective-fsm-graph",
+      native: true,
     };
   }
   if (

@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { deflateSync } from "node:zlib";
 import { cropHMG, type HMG } from "#util/hmg";
+import { spriteModuleAtlas } from "#util/sprite";
 
 /** A flattened RGB PSD with an alpha channel; discarded editing layers are not invented. */
 export function imageToPSD(image: HMG): Uint8Array {
@@ -205,7 +206,7 @@ const string = (value: string) => {
 export function animationToASE(
   def: any,
   animation: any,
-  atlas: HMG,
+  atlas: HMG | Record<string, HMG>,
   tags: { name: string; from: number; to: number }[] = [],
 ): Uint8Array {
   if (!animation.seq.length || animation.seq.length > 65535) {
@@ -233,7 +234,12 @@ export function animationToASE(
       maxX = Math.max(maxX, px + w);
       maxY = Math.max(maxY, py + h);
       return {
-        image: cropHMG(atlas, { x, y, w, h }),
+        image: cropHMG(
+          "data" in atlas
+            ? (atlas as HMG)
+            : spriteModuleAtlas(atlas as Record<string, HMG>, module.atlas),
+          { x, y, w, h },
+        ),
         x: px,
         y: py,
         feature: module.feature,

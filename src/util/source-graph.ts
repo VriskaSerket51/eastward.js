@@ -16,8 +16,15 @@ type Node = {
   children?: Node[];
   description?: string;
   transition?: unknown;
+  group?: boolean;
 };
-type Edge = { from: string; to: string; label?: string; dashed?: boolean };
+type Edge = {
+  from: string;
+  to: string;
+  label?: string;
+  dashed?: boolean;
+  color?: string;
+};
 
 /** Recreates importable yEd graphs; original visual placement is not recoverable. */
 export function sourceGraphML(type: string, data: any): string {
@@ -26,6 +33,32 @@ export function sourceGraphML(type: string, data: any): string {
   if (type === "fsm_scheme") {
     nodes = data.nodes;
     edges = data.edges;
+  } else if (type === "story_graph") {
+    const convert = (node: any): Node => {
+      if (node.fullId !== node.id) {
+        throw new Error("Story node ID differs from its full ID: " + node.id);
+      }
+      return {
+        id: node.id,
+        name: node.text ?? "",
+        description: node.type ? "type=" + node.type : undefined,
+        group: ["GROUP", "REF"].includes(node.type),
+        children: node.children?.map(convert),
+      };
+    };
+    nodes = data.rootNodes.map(convert);
+    edges = data.edges.map((edge: any) => {
+      if (!["NORMAL", "NOT", "COMMENT"].includes(edge.type)) {
+        throw new Error("Unsupported story edge type: " + edge.type);
+      }
+      return {
+        from: edge.src,
+        to: edge.dst,
+        label: edge.text,
+        color: edge.type === "NOT" ? "#FF0000" : "#000000",
+        dashed: edge.type === "COMMENT",
+      };
+    });
   } else if (type === "quest_scheme") {
     nodes = data.nodes;
     edges = data.connections.map((e: any) => ({
@@ -77,21 +110,39 @@ export function sourceGraphML(type: string, data: any): string {
   } else {
     throw new Error("Unsupported editable graph: " + type);
   }
+  const ids = new Set<string>();
+  const visit = (list: Node[]) => {
+    for (const node of list) {
+      if (ids.has(node.id)) {
+        throw new Error("Duplicate graph node: " + node.id);
+      }
+      ids.add(node.id);
+      visit(node.children ?? []);
+    }
+  };
+  visit(nodes);
+  for (const edge of edges) {
+    if (!ids.has(edge.from) || !ids.has(edge.to)) {
+      throw new Error(
+        "Missing graph edge endpoint: " + edge.from + " -> " + edge.to,
+      );
+    }
+  }
   let index = 0;
   const render = (node: Node): string => {
     const n = index++,
-      group = !!node.children?.length;
+      group = node.group || !!node.children?.length;
     const shape = group ? "GroupNode" : "ShapeNode";
-    const graphics = `<y:${shape}><y:Geometry x="${(n % 8) * 180}" y="${Math.floor(n / 8) * 100}" width="120" height="60"/><y:NodeLabel x="0" y="0" width="120" height="30" fontSize="12">${xml(node.name)}</y:NodeLabel><y:BorderStyle color="#000000" type="line" width="1"/></y:${shape}>`;
-    return `<node id="${xml(node.id)}"${group ? ' yfiles.foldertype="group"' : ""}><data key="d0">\n${graphics}\n</data>${node.transition ? `<data key="d2">${xml(JSON.stringify(node.transition))}</data>` : ""}${group ? `<graph id="${xml(node.id)}_graph" edgedefault="directed">${node.children!.map(render).join("\n")}</graph>` : ""}</node>`;
+    const graphics = `<y:${shape}><y:Geometry x="${(n % 8) * 180}" y="${Math.floor(n / 8) * 100}" width="120" height="60"/>${node.name ? `<y:NodeLabel x="0" y="0" width="120" height="30" fontSize="12">${xml(node.name)}</y:NodeLabel>` : ""}<y:BorderStyle color="#000000" type="line" width="1"/></y:${shape}>`;
+    return `<node id="${xml(node.id)}"${group ? ' yfiles.foldertype="group"' : ""}><data key="d0">\n${graphics}\n</data>${node.description ? `<data key="d3">${xml(node.description)}</data>` : ""}${node.transition ? `<data key="d2">${xml(JSON.stringify(node.transition))}</data>` : ""}${group ? `<graph id="${xml(node.id)}_graph" edgedefault="directed">${(node.children ?? []).map(render).join("\n")}</graph>` : ""}</node>`;
   };
   const edgeXML = edges
     .map(
       (edge, i) =>
-        `<edge id="e${i}" source="${xml(edge.from)}" target="${xml(edge.to)}"><data key="d1">\n<y:PolyLineEdge><y:LineStyle color="#000000" type="${edge.dashed ? "dashed" : "line"}" width="1"/>${edge.label ? `<y:EdgeLabel x="0" y="0" width="120" height="30" fontSize="12">${xml(edge.label)}</y:EdgeLabel>` : ""}</y:PolyLineEdge>\n</data></edge>`,
+        `<edge id="e${i}" source="${xml(edge.from)}" target="${xml(edge.to)}"><data key="d4">${xml(edge.color ?? "#000000")}</data><data key="d5">${edge.dashed ? "dashed" : "line"}</data><data key="d1">\n<y:PolyLineEdge><y:LineStyle color="${xml(edge.color ?? "#000000")}" type="${edge.dashed ? "dashed" : "line"}" width="1"/>${edge.label ? `<y:EdgeLabel x="0" y="0" width="120" height="30" fontSize="12">${xml(edge.label)}</y:EdgeLabel>` : ""}</y:PolyLineEdge>\n</data></edge>`,
     )
     .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml"><key id="d0" for="node" yfiles.type="nodegraphics"/><key id="d1" for="edge" yfiles.type="edgegraphics"/><key id="d2" for="node" attr.name="transition" attr.type="string"/><graph id="G" edgedefault="directed">${nodes.map(render).join("\n")}\n${edgeXML}</graph></graphml>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml"><key id="d0" for="node" yfiles.type="nodegraphics"/><key id="d1" for="edge" yfiles.type="edgegraphics"/><key id="d2" for="node" attr.name="transition" attr.type="string"/><key id="d3" for="node" attr.name="description" attr.type="string"/><key id="d4" for="edge" attr.name="color" attr.type="string"/><key id="d5" for="edge" attr.name="style" attr.type="string"/><graph id="G" edgedefault="directed">${nodes.map(render).join("\n")}\n${edgeXML}</graph></graphml>`;
 }
 
 /** The generated FSM Lua retains states and effective transitions, not ANY provenance. */
