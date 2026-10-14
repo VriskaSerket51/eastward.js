@@ -65,7 +65,7 @@ test("image helpers reject truncated pixels and invalid crop or merge bounds", (
   assert.throws(() => cropHMG(image, { x: 1, y: 0, w: 1, h: 1 }), /bounds/);
   assert.throws(() => mergeHMG(image, image, -1, 0), /bounds/);
   const raw = encodeHMG(image);
-  new DataView(raw.buffer).setInt32(12, 2, true);
+  new DataView(raw.buffer).setInt32(12 + raw[3], 2, true);
   assert.throws(() => decodeHMG(raw), /size mismatch/);
 });
 

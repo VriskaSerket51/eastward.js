@@ -7,11 +7,30 @@ import { decodePng, encodePng } from "@lunapaint/png-codec";
 import { Rect } from "#type";
 import { Buffer as NodeBuffer } from "node:buffer";
 import { crc32, deflateSync } from "node:zlib";
+import { randomBytes, randomInt } from "node:crypto";
 
 export type HMG = {
   width: number;
   height: number;
   data: Uint8Array;
+};
+
+export type HMGEncodingOptions = {
+  paddingA?: Uint8Array;
+  paddingB?: Uint8Array;
+};
+
+export type HMGHeader = {
+  fileSize: number;
+  compressedSize: number;
+  width: number;
+  height: number;
+  pixelWidthDeclaration: number;
+  acceleration: number;
+  alternateCopyFlag: number;
+  paddingA: Uint8Array;
+  paddingB: Uint8Array;
+  payloadOffset: number;
 };
 
 export function emptyHMG(width: number, height: number) {
@@ -169,11 +188,18 @@ export async function png2hmg(png: Uint8Array) {
   return image as HMG;
 }
 
-export function encodeHMG(hmg: HMG): Uint8Array {
+export function encodeHMG(
+  hmg: HMG,
+  options: HMGEncodingOptions = {},
+): Uint8Array {
   validateImage(hmg);
   if (!hmg.width || !hmg.height)
     throw new RangeError("HMG dimensions must be positive");
   const { width, height, data } = hmg;
+  const paddingA = options.paddingA ?? randomBytes(randomInt(1, 5));
+  const paddingB = options.paddingB ?? randomBytes(randomInt(1, 5));
+  if (paddingA.length > 255 || paddingB.length > 255)
+    throw new RangeError("HMG padding cannot exceed 255 bytes per region");
 
   let compressedData = new Uint8Array(compressBlockBound(data.byteLength));
 
@@ -200,26 +226,34 @@ export function encodeHMG(hmg: HMG): Uint8Array {
     compressedData = compressedData.slice(0, count);
   }
 
-  // Zero padding is valid; native writers choose random 1–4 byte padding.
-  const result = new Uint8Array(24 + count);
+  const fieldsOffset = 8 + paddingA.length;
+  const payloadOffset = fieldsOffset + 16 + paddingB.length;
+  const result = new Uint8Array(payloadOffset + count);
   const header = new DataView(result.buffer);
   result.set(new TextEncoder().encode("PGF"), 0);
-  result[3] = 0;
+  result[3] = paddingA.length;
   header.setUint32(4, result.length, true);
-  header.setUint32(8, count, true);
-  header.setUint32(12, width, true);
-  header.setUint32(16, height, true);
-  result[20] = 32;
-  result[21] = 1; // LZ4 compression acceleration metadata.
-  result[22] = 0;
-  result[23] = 0;
-  result.set(compressedData, 24);
+  result.set(paddingA, 8);
+  header.setUint32(fieldsOffset, count, true);
+  header.setInt32(fieldsOffset + 4, width, true);
+  header.setInt32(fieldsOffset + 8, height, true);
+  result[fieldsOffset + 12] = 32;
+  result[fieldsOffset + 13] = 1; // Fast LZ4 writer metadata.
+  result[fieldsOffset + 14] = paddingB.length;
+  result[fieldsOffset + 15] = 0;
+  result.set(paddingB, fieldsOffset + 16);
+  result.set(compressedData, payloadOffset);
 
   return result;
 }
 
 export function decodeHMG(raw: Uint8Array): HMG {
-  const { width, height, payloadOffset, compressedSize } = readHMGHeader(raw);
+  const { width, height, payloadOffset, compressedSize, alternateCopyFlag } =
+    readHMGHeader(raw);
+  if (alternateCopyFlag !== 0)
+    throw new Error(
+      "Unsupported HMG alternate-copy flag: " + alternateCopyFlag,
+    );
   const compressedData = raw.subarray(
     payloadOffset,
     payloadOffset + compressedSize,
@@ -232,7 +266,7 @@ export function decodeHMG(raw: Uint8Array): HMG {
 }
 
 /** PGF has a 24-byte base header plus two variable-length padding regions. */
-function readHMGHeader(raw: Uint8Array) {
+export function readHMGHeader(raw: Uint8Array): HMGHeader {
   if (raw.length < 24) throw new RangeError("Truncated HMG header");
   if (raw[0] !== 0x50 || raw[1] !== 0x47 || raw[2] !== 0x46)
     throw new Error("Invalid HMG magic (expected PGF)");
@@ -244,23 +278,30 @@ function readHMGHeader(raw: Uint8Array) {
   if (fieldsOffset + 16 > raw.length)
     throw new RangeError("Truncated HMG header padding");
   const compressedSize = view.getUint32(fieldsOffset, true);
-  const width = view.getUint32(fieldsOffset + 4, true);
-  const height = view.getUint32(fieldsOffset + 8, true);
+  const width = view.getInt32(fieldsOffset + 4, true);
+  const height = view.getInt32(fieldsOffset + 8, true);
   if (width <= 0 || height <= 0)
     throw new RangeError("HMG dimensions must be positive");
   // Declaration and acceleration are ignored by the native decoder.
   const paddingLengthB = raw[fieldsOffset + 14];
   const alternateCopyFlag = raw[fieldsOffset + 15];
-  if (alternateCopyFlag !== 0)
-    throw new Error(
-      "Unsupported HMG alternate-copy flag: " + alternateCopyFlag,
-    );
   const payloadOffset = fieldsOffset + 16 + paddingLengthB;
   if (payloadOffset > raw.length)
     throw new RangeError("Truncated HMG header padding");
   if (compressedSize === 0 || compressedSize !== raw.length - payloadOffset)
     throw new Error("HMG payload size mismatch");
-  return { width, height, payloadOffset, compressedSize };
+  return {
+    fileSize: raw.length,
+    compressedSize,
+    width,
+    height,
+    pixelWidthDeclaration: raw[fieldsOffset + 12],
+    acceleration: raw[fieldsOffset + 13],
+    alternateCopyFlag,
+    paddingA: Uint8Array.from(raw.subarray(8, fieldsOffset)),
+    paddingB: Uint8Array.from(raw.subarray(fieldsOffset + 16, payloadOffset)),
+    payloadOffset,
+  };
 }
 
 function imageBytes(width: number, height: number) {

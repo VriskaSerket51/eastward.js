@@ -1,10 +1,11 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { encodeHMG, decodeHMG } = require("../dist");
+const { encodeHMG, decodeHMG, readHMGHeader } = require("../dist");
+const noPadding = { paddingA: new Uint8Array(), paddingB: new Uint8Array() };
 
 test("PGF variable padding, metadata and sliced buffers follow the native layout", () => {
   const image = { width: 1, height: 1, data: Uint8Array.of(1, 2, 3, 4) };
-  const original = encodeHMG(image);
+  const original = encodeHMG(image, noPadding);
   for (const [a, b] of [
     [1, 4],
     [4, 1],
@@ -23,6 +24,14 @@ test("PGF variable padding, metadata and sliced buffers follow the native layout
     raw.writeUInt32LE(raw.length, 4);
     const sliced = Buffer.concat([Buffer.alloc(3), raw]).subarray(3);
     assert.deepEqual(decodeHMG(sliced), image);
+    const header = readHMGHeader(sliced);
+    assert.equal(header.pixelWidthDeclaration, 24);
+    assert.equal(header.acceleration, 7);
+    assert.equal(header.payloadOffset, 24 + a + b);
+    const rewritten = encodeHMG(image, header);
+    assert.deepEqual(readHMGHeader(rewritten).paddingA, header.paddingA);
+    assert.deepEqual(readHMGHeader(rewritten).paddingB, header.paddingB);
+    assert.deepEqual(decodeHMG(rewritten), image);
   }
 });
 
@@ -31,7 +40,7 @@ test("PGF rejects inconsistent sizes, truncated padding and alternate-copy varia
     width: 1,
     height: 1,
     data: Uint8Array.of(1, 2, 3, 4),
-  });
+  }, noPadding);
   const edit = (mutate) => {
     const raw = Buffer.from(original);
     mutate(raw);
@@ -49,7 +58,28 @@ test("PGF rejects inconsistent sizes, truncated padding and alternate-copy varia
   assert.throws(() => decodeHMG(edit((raw) => (raw[3] = 255))), /padding/);
   assert.throws(() => decodeHMG(edit((raw) => (raw[22] = 255))), /padding/);
   assert.throws(
+    () => readHMGHeader(edit((raw) => raw.writeInt32LE(-1, 12))),
+    /dimensions/,
+  );
+  assert.throws(
     () => decodeHMG(edit((raw) => (raw[23] = 1))),
     /alternate-copy/,
   );
+});
+
+test("new PGF files use native padding ranges and explicit zero padding remains valid", () => {
+  const image = { width: 1, height: 1, data: Uint8Array.of(1, 2, 3, 4) };
+  for (let i = 0; i < 16; i++) {
+    const raw = encodeHMG(image);
+    const header = readHMGHeader(raw);
+    assert.ok(header.paddingA.length >= 1 && header.paddingA.length <= 4);
+    assert.ok(header.paddingB.length >= 1 && header.paddingB.length <= 4);
+    assert.equal(header.pixelWidthDeclaration, 32);
+    assert.equal(header.acceleration, 1);
+    assert.equal(header.alternateCopyFlag, 0);
+    assert.equal(raw.length, header.payloadOffset + header.compressedSize);
+    assert.deepEqual(decodeHMG(raw), image);
+  }
+  assert.equal(readHMGHeader(encodeHMG(image, noPadding)).payloadOffset, 24);
+  assert.throws(() => encodeHMG(image, { paddingA: new Uint8Array(256) }), /padding/);
 });
