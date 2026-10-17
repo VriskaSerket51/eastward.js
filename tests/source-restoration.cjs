@@ -62,10 +62,16 @@ test("source restoration preserves source paths and does not disguise compiled F
     report.unavailable["AI/State.fsm.graphml"],
     /No usable compiled graph data/,
   );
-  assert.equal(
-    JSON.parse(await fs.readFile(output + ".recovery.json")).format,
-    "eastward-source-restoration",
+  const metadata = JSON.parse(
+    await fs.readFile(path.join(output, ".eastward-project.json")),
   );
+  assert.deepEqual(metadata, {
+    format: "eastward-source-project",
+    version: 1,
+    assets: { "AI/Apple.bt_script": "game/asset/AI/Apple.bt_script" },
+    pathRemappings: {},
+  });
+  await assert.rejects(fs.access(output + ".recovery.json"));
 });
 
 test("existing CSV loader restores dict rows, stable list columns and escaped cells", async () => {

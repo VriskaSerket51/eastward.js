@@ -331,6 +331,15 @@ test("source export writes Gii deck folders and rewrites source document referen
   assert.equal(report.restored[logical].path, "game/asset/deck/A.deckpack");
   assert.equal(report.pathRemappings[logical], "deck/A.deckpack");
   assert.deepEqual(report.remappedDocuments, ["game/asset/" + document]);
+  const metadata = JSON.parse(
+    await fs.readFile(path.join(out, ".eastward-project.json")),
+  );
+  assert.deepEqual(Object.keys(metadata).sort(), [
+    "assets", "format", "pathRemappings", "version",
+  ]);
+  assert.equal(metadata.assets[logical], "game/asset/deck/A.deckpack");
+  assert.equal(metadata.pathRemappings[logical], "deck/A.deckpack");
+  await assert.rejects(fs.access(out + ".recovery.json"));
   assert.equal(
     JSON.parse(await fs.readFile(path.join(out, "game/asset/" + document)))
       .deck,

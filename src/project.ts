@@ -557,8 +557,18 @@ export async function exportSourceProject(
       record.provenance += "-remapped-references";
     }
   }
-  await fs.writeFile(out + ".recovery.json", JSON.stringify(report, null, 2), {
-    flag: "wx",
-  });
+  const metadata = {
+    format: "eastward-source-project",
+    version: 1,
+    assets: Object.fromEntries(
+      Object.entries(report.restored).map(([name, entry]) => [name, entry.path]),
+    ),
+    pathRemappings,
+  };
+  await fs.writeFile(
+    path.join(out, ".eastward-project.json"),
+    JSON.stringify(metadata, null, 2),
+    { flag: "wx" },
+  );
   return report;
 }
