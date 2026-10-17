@@ -1,145 +1,81 @@
 # eastward.js
 
-Typescript library for imort/export assets of the video game Eastward.
+English | [한국어](README.ko.md)
 
-**No Browser Support**
+A TypeScript library for importing and exporting Eastward assets.
 
-## Installation into an existing project
+**No browser support.**
 
-To install `eastward.js` as a dependency of your Node.js project:
+Requires Node.js 24 or newer.
+
+## Installation
 
 ```sh
 npm install eastward.js
 ```
 
-`eastward.js` is made with TypeScript.
-
 ## How to use
 
-### Command Line usage
+### CLI usage
 
-`npx eastward --help` for help.
+Run `npx eastward --help` for usage information.
 
-If you installed eastward.js globally,
+Extract assets:
 
 ```sh
-npm install -g eastward.js
+npx eastward extract --root "/path/to/Eastward" --out ./assets
 ```
 
-you can just use `eastward --help`
+Use `--type` to select an asset type.
 
+Restore a source tree or export a resource backup:
+
+```sh
+npx eastward restore-project --root "/path/to/Eastward" --out ./source-project
+npx eastward export-project --root "/path/to/Eastward" --out ./resource-backup
 ```
-Usage: eastward [MODE] [OPTION]... [FILE]...
-Mode and Option:
-        extract         Extract all assets with types from game root directory to output directory. Without explicit --type option, all assets will be extracted.
-                --root          game root directory
-                -T, --type      asset type; eastward --help type to get list
-                --out           output directory
-        unzip           Extract data from .g files to output directory.
-                --out           output directory
-                [FILE]          .g files
-        zip             Archive all data from root directory to output .g file.
-                --root          root directory
-                --out           output .g file
-        hmg2png         Read hmg files and convert to png files.
-                -r              Read recursive in directory
-                --in            Input directory or file
-                --out           Output directory or file
-        png2hmg         Read png files and convert to hmg files.
-                -r              Read recursive in directory
-                --in            Input directory or file
-                --out           Output directory or file
-        json2msg                Read JSON files and convert to msgpack files.
-                -r              Read recursive in directory
-                --in            Input directory or file
-                --out           Output directory or file
-        inject          Read files from root and inject them into .g file.
-                --root          Input directory
-                --in            Input .g file
-                --out           Output .g file
-```
+
+`restore-project` restores source paths. `export-project` preserves indexes and resources together.
+
+| Command | Function |
+| --- | --- |
+| `unzip`, `zip`, `inject` | Extract, create or replace files in `.g` archives |
+| `hmg2png`, `png2hmg` | Convert HMG/PNG images |
+| `json2msg` | Convert JSON to MessagePack |
 
 ### Source code usage
 
-Example for extract some assets from the root game folder.
+Extract assets from a game directory:
 
-```javascript
-import { Eastward, registerAll } from "eastward.js";
+```js
+import { Eastward, registerAll } from 'eastward.js';
 
-const root = "C:/SteamLibrary/steamapps/common/Eastward";
-const eastward = new Eastward({ root });
+const eastward = new Eastward({ root: '/path/to/Eastward' });
 await eastward.init();
-registerAll(eastward); // register all asset types
-
-await eastward.extractTo("./extract");
-
-console.log("extracting finished");
+registerAll(eastward);
+await eastward.extractTo('./assets');
 ```
 
-Or you can just extract some types of assets.
+You can also register only the asset types you need:
 
-```javascript
-import { Eastward, LocalePackAsset } from "eastward.js";
+```js
+import { Eastward, LocalePackAsset } from 'eastward.js';
 
-const root = "C:/SteamLibrary/steamapps/common/Eastward";
-const eastward = new Eastward({ root });
+const eastward = new Eastward({ root: '/path/to/Eastward' });
 await eastward.init();
-eastward.registerAssetLoader("locale_pack", LocalePackAsset);
-
-await eastward.extractTo("./extract_locale_pack");
-
-console.log("extracting locale_pack finished");
+eastward.registerAssetLoader('locale_pack', LocalePackAsset);
+await eastward.extractTo('./locales');
 ```
 
-Example for extract certain assets from the root game folder.
+Extracting Lua source requires the native decompiler. See the [decompiler repository](https://github.com/VriskaSerket51/node-luajit-decompiler) for build requirements.
 
-```javascript
-import { Eastward, TextureAsset, registerAll } from "eastward.js";
+## Development
 
-const root = "C:/SteamLibrary/steamapps/common/Eastward";
-const eastward = new Eastward({ root });
-await eastward.init();
-registerAll(eastward); // register all asset types
-
-const texture = await eastward.loadAsset<TextureAsset>("texture/ui/icon/miniSam.png");
-if (texture) {
-  await texture.saveFile("./miniSam.png")
-}
-
-console.log("extracting finished");
+```sh
+npm ci
+npm run build
 ```
 
-Example for reading asset from archive.
+JavaScript and type declarations are generated in `dist`.
 
-```javascript
-import { GArchive } from "eastward.js";
-import { writeFile } from "fs/promises";
-
-const archive = new GArchive();
-await archive.load(
-  "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
-);
-
-const data = await archive.getFileData("1fbba5dfab829f507358f58c1c2dc59a");
-if (data == null) {
-  process.exit(-1);
-}
-writeFile("./CH1.lua", data);
-```
-
-Example for writing asset to archive.
-
-```javascript
-import { GArchive } from "eastward.js";
-import { readFile } from "fs/promises";
-
-const archive = new GArchive();
-await archive.load(
-  "C:/SteamLibrary/steamapps/common/Eastward/content/game/locale.g"
-);
-const data = await readFile("./CH1.lua");
-
-await archive.setFileData("1fbba5dfab829f507358f58c1c2dc59a", data);
-
-await archive.saveFile("./locale.g");
-```
+See the [HMG format](docs/hmg-format.md) and [language patch guide](https://github.com/VriskaSerket51/EastwardModLoader/blob/main/docs/language-patches.md).
