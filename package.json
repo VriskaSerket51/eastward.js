@@ -5,7 +5,7 @@
   "type": "commonjs",
   "imports": {
     "#*": {
-      "development": "./src/*.ts",
+      "eastward-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -21,7 +21,7 @@
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
     "typecheck": "tsc --noEmit",
     "start": "npm run build && node ./dist/index.js",
-    "dev": "node --conditions=development --import tsx --watch ./src/index.ts"
+    "dev": "node --conditions=eastward-source --import tsx --watch ./src/index.ts"
   },
   "repository": {
     "type": "git",
