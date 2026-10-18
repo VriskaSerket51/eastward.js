@@ -59,6 +59,7 @@
     "package": "node-webpmux/3.2.1",
     "license": "LGPL-3.0-or-later",
     "notices": [
+      "node-webpmux-COPYING.txt",
       "node-webpmux-COPYING.LESSER.txt"
     ]
   },

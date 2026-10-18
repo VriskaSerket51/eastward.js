@@ -1,9 +1,10 @@
 eastward.js
 
-GPL-3.0-only. See LICENSE.
+Project code in this revision is licensed under MIT. See LICENSE.
+Earlier releases retain the licenses under which they were distributed.
 Third-party components retain their own licenses and copyright notices.
 Production npm package notices are listed in licenses/npm/packages.json.
-The unmodified node-webpmux wrapper is LGPL-3.0-or-later; its COPYING notice is included.
+The unmodified node-webpmux wrapper is LGPL-3.0-or-later; its GPL and LGPL license texts are included.
 
 Source: https://github.com/VriskaSerket51/eastward.js
 node-webpmux source: https://github.com/ApeironTsuka/node-webpmux

@@ -1,6 +1,6 @@
 {
   "name": "eastward.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TypeScript library for importing and exporting assets of the video game Eastward.",
   "type": "commonjs",
   "imports": {
@@ -36,7 +36,7 @@
     "typescript"
   ],
   "author": "IREVES",
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/VriskaSerket51/eastward.js/issues"
   },
@@ -51,11 +51,11 @@
     "@lunapaint/png-codec": "^0.2.0",
     "@msgpack/msgpack": "^3.1.3",
     "@rinsuki/lz4-ts": "^1.0.1",
-    "luajit-decompiler": "https://github.com/VriskaSerket51/node-luajit-decompiler/archive/b78439e.tar.gz",
+    "luajit-decompiler": "1.1.1",
     "node-webpmux": "^3.2.1",
     "pofile": "^1.1.4",
     "wasmoon-lua5.1": "^1.18.12",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "xml2js": "^0.6.2"
   },
   "allowScripts": {
