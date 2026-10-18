@@ -1,6 +1,6 @@
 {
   "name": "eastward.js",
-  "version": "0.0.56",
+  "version": "1.0.0",
   "description": "TypeScript library for importing and exporting assets of the video game Eastward.",
   "type": "commonjs",
   "imports": {
@@ -63,5 +63,10 @@
   },
   "engines": {
     "node": ">=24.0.0"
-  }
+  },
+  "files": [
+    "dist/",
+    "licenses/",
+    "NOTICE"
+  ]
 }
