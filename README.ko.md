@@ -2,7 +2,7 @@
 
 [English](README.md) | 한국어
 
-게임 Eastward의 에셋을 가져오고 내보내는 TypeScript 라이브러리입니다.
+Eastward 에셋을 읽고 내보내는 비공식 TypeScript 라이브러리입니다.
 
 **브라우저는 지원하지 않습니다.**
 
@@ -28,14 +28,14 @@ npx eastward extract --root "/path/to/Eastward" --out ./assets
 
 `--type`으로 추출할 에셋 종류를 지정할 수 있습니다.
 
-소스 트리와 리소스 백업을 만드는 예제입니다.
+편집용 파일 트리와 리소스 백업을 만드는 예제입니다.
 
 ```sh
 npx eastward restore-project --root "/path/to/Eastward" --out ./source-project
 npx eastward export-project --root "/path/to/Eastward" --out ./resource-backup
 ```
 
-`restore-project`는 소스 경로로 복원하고, `export-project`는 인덱스와 리소스를 함께 보관합니다.
+`restore-project`는 게임에 포함된 에셋과 인덱스를 바탕으로 편집용 파일 트리를 만듭니다. 배포본에 없는 원본 프로젝트 설정과 편집 정보는 복원하지 못합니다. `export-project`는 인덱스와 리소스를 함께 보관합니다.
 
 | 명령 | 기능 |
 | --- | --- |
@@ -67,7 +67,7 @@ eastward.registerAssetLoader('locale_pack', LocalePackAsset);
 await eastward.extractTo('./locales');
 ```
 
-Lua 소스를 추출하려면 네이티브 디컴파일러가 필요합니다. 빌드 도구는 [디컴파일러 저장소](https://github.com/VriskaSerket51/node-luajit-decompiler)를 참고하세요.
+LuaJIT 바이트코드를 Lua 코드로 변환하려면 네이티브 디컴파일러가 필요합니다. 결과는 개발자가 작성한 원본 소스와 다를 수 있습니다. 빌드 도구는 [디컴파일러 저장소](https://github.com/VriskaSerket51/node-luajit-decompiler)를 참고하세요.
 
 ## 개발
 

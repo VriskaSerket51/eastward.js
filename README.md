@@ -2,7 +2,7 @@
 
 English | [한국어](README.ko.md)
 
-A TypeScript library for importing and exporting Eastward assets.
+An unofficial TypeScript library for reading and exporting Eastward assets.
 
 **No browser support.**
 
@@ -28,14 +28,14 @@ npx eastward extract --root "/path/to/Eastward" --out ./assets
 
 Use `--type` to select an asset type.
 
-Restore a source tree or export a resource backup:
+Export an editable file tree or a resource backup:
 
 ```sh
 npx eastward restore-project --root "/path/to/Eastward" --out ./source-project
 npx eastward export-project --root "/path/to/Eastward" --out ./resource-backup
 ```
 
-`restore-project` restores source paths. `export-project` preserves indexes and resources together.
+`restore-project` builds an editable file tree from the assets and indexes included in the game. It cannot recover original project settings or editing information absent from the shipped game. `export-project` preserves indexes and resources together.
 
 | Command | Function |
 | --- | --- |
@@ -67,7 +67,7 @@ eastward.registerAssetLoader('locale_pack', LocalePackAsset);
 await eastward.extractTo('./locales');
 ```
 
-Extracting Lua source requires the native decompiler. See the [decompiler repository](https://github.com/VriskaSerket51/node-luajit-decompiler) for build requirements.
+Converting LuaJIT bytecode to Lua code requires the native decompiler. The result may differ from the original source written by the developers. See the [decompiler repository](https://github.com/VriskaSerket51/node-luajit-decompiler) for build requirements.
 
 ## Development
 
