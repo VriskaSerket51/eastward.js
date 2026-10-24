@@ -2,11 +2,11 @@
 
 English | [한국어](hmg-format.ko.md)
 
-Contains a `PGF` header and LZ4-compressed RGBA pixels. Padding determines the header length.
+HMG consists of a `PGF` header and LZ4-compressed RGBA pixel data. Padding determines the header length.
 
 ## Layout
 
-Integers are little-endian. `A` is the value at offset 3; `B` is the value at offset `22 + A`.
+Integers are stored in little-endian order. `A` and `B` are the padding lengths stored at offsets `3` and `22 + A`, respectively. Sizes in the table are in bytes.
 
 | Offset | Size | Field |
 | --- | --- | --- |
@@ -30,17 +30,17 @@ S             = payloadOffset + C
 pixelBytes    = W * H * 4
 ```
 
-Sizes are unsigned 32-bit integers; dimensions are signed 32-bit integers. With both padding lengths set to zero, the payload starts at offset 24.
+The total size and compressed length are unsigned 32-bit integers; width and height are signed 32-bit integers. With both padding lengths set to zero, the payload starts at offset 24.
 
 ## Pixels and compression
 
-Pixels are RGBA8888. The compressor receives `W * H * 4` bytes. The declared value 32 likely means bits per pixel, but the reader does not use this field. Setting it to 24 does not produce RGB888 pixels.
+Pixels use RGBA8888, with an uncompressed size of `W * H * 4` bytes. The declared value 32 likely means bits per pixel, but the reader does not use this field. Setting it to 24 does not produce RGB888 pixels.
 
 The payload is a raw LZ4 block, not an LZ4 frame. Acceleration controls compression search and is not used during decompression.
 
 ## Padding
 
-The writer chooses each padding length with `rand() % 4 + 1` and fills it with random bytes. The reader skips these bytes.
+The game writer chooses each padding length with `rand() % 4 + 1` and fills it with random bytes. The reader skips these bytes.
 
 Changing padding or removing it while adjusting the size fields does not change the pixels.
 
@@ -48,10 +48,4 @@ Changing padding or removing it while adjusting the size fields does not change 
 
 A value of 0 decompresses directly into the image buffer. The other branch allocates a temporary buffer of `W * H + 1024` bytes, reads the source four bytes at a time and advances the destination by one byte. Writes overlap, and large images can cause out-of-bounds reads.
 
-The writer stores 0. The JS/C# implementations reject nonzero flags.
-
-## Implementation
-
-JS uses `readHMGHeader`, `decodeHMG` and `encodeHMG`. C# uses `HmgHeader` and `HmgAsset.Header`. Existing padding can be preserved, or empty padding can be specified.
-
-Calculate the header size from the padding lengths. Decompression must produce `W * H * 4` bytes. Atlas alpha conversion is handled by the texture layer.
+The game writer always stores 0. The JS/C# implementations reject nonzero flags.
